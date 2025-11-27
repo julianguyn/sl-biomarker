@@ -2,29 +2,27 @@ configfile: "config/cohorts.yaml"
 
 rule all:
     input: 
-        expand(
-            "data/results/SLscores/{cohort}.csv", 
-            cohort = config["cohorts"]
-        )
+        expand("data/procdata/binarymat/{cohort}.csv", cohort = config["cohorts"]),
+        expand("data/results/SLscores/{cohort}.csv", cohort = config["cohorts"])
+        
 
 rule get_SL_scores:
     input: 
-        filename = "{cohort}",
         counts =  "data/rawdata/{cohort}_RSEM_TPM_reheadered.tsv"
     params:
         runtime = "48:00:00",
         SL_pairs = "data/procdata/SL_Pairs/human_venn_all_regions.csv",
-        bmatoutfile = "data/procdata/binarymat/{cohort}.csv"
         partition = "all"
-    output: "data/results/SLscores/{cohort}.csv"
+    output: 
+        bmatoutfile = "data/procdata/binarymat/{cohort}.csv",
+        SLoutfile = "data/results/SLscores/{cohort}.csv"
     threads: 4
     resources: mem_mb=30000
     shell:
         """
         python workflow/scripts/get_SL_scores.py 
-        --filename {input.filename}
         --counts {input.counts}
         --SL_pairs {params.SL_pairs}
-        --bmatoutfile {params.bmatoutfile}
-        --outfile {output}
+        --bmatoutfile {output.bmatoutfile}
+        --SLoutfile {output.SLoutfile}
         """

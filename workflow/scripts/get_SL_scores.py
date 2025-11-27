@@ -5,7 +5,6 @@ import argparse
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--filename", help="Cohort name", required=True,)
 parser.add_argument("--counts", help="RSEM TPM filepath", required=True)
 parser.add_argument("--SL_pairs", help="path to SL pairs (from get networks)", required=True)
 parser.add_argument("--bmatoutfile", help="output CSV path for binary matrix", required=True)
@@ -13,18 +12,17 @@ parser.add_argument("--SLoutfile", help="Output CSV path for SL scores", require
 
 args = parser.parse_args()
 
-fielname = args.filename
 counts = args.counts
 SL_pairs = args.SL_pairs
 bmatoutfile = args.bmatoutfile
 SLoutfile = args.SLoutfile
 
-print("Starting %s" % filename)
-
 
 ########################################
 # Load in data
 ########################################
+
+print("Loading in data")
 
 # load in known SL pairs
 SL_pairs = pd.read_csv(SL_pairs)
@@ -35,6 +33,8 @@ mat = pd.read_table(counts)
 ########################################
 # Make binary matrix
 ########################################
+
+print("Making binary matrix")
 
 # compute lower thirds
 mat["lower_third"] = (
@@ -53,6 +53,8 @@ mat.to_csv(bmatoutfile, index=False)
 ########################################
 # Get SL Scores
 ########################################
+
+print("Computing SL scores")
 
 SL_scores = []
 sampleids = [c for c in mat.columns if c not in ["Hugo_Symbol"]]
