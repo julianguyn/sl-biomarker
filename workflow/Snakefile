@@ -17,12 +17,16 @@ rule get_SL_scores:
         bmatoutfile = "data/procdata/binarymat/{cohort}.csv",
         SLoutfile = "data/results/SLscores/{cohort}.csv"
     threads: 4
-    resources: mem_mb=30000
+    resources: 
+        mem="30G",
+        time="48:00:00",
+        cpus=4,
+        partition="all"
     shell:
         """
-        python workflow/scripts/get_SL_scores.py 
-        --counts {input.counts}
-        --SL_pairs {params.SL_pairs}
-        --bmatoutfile {output.bmatoutfile}
-        --SLoutfile {output.SLoutfile}
+        python workflow/scripts/get_SL_scores.py \
+        --counts {input.counts} \
+        --SL_pairs {params.SL_pairs} \
+        --bmatoutfile {output.bmatoutfile} \
+        --SLoutfile {output.SLoutfile} \
         """
