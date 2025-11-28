@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#SBATCH --job-name=get_SL_scores
+#SBATCH --job-name=synleth
 
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=jlm.nguyen@mail.utoronto.ca
 
-conda init --all
+source /cluster/home/julian/miniconda3/etc/profile.d/conda.sh
 conda activate synleth
 
 snakemake \

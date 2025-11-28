@@ -1,5 +1,5 @@
 cohorts:
-  - MOHCCN
+  - MOHCCNO
   - INSPIRE
   - IOALINES
   - OCTANE
@@ -7,3 +7,7 @@ cohorts:
   - COMPASS
   - IRIS
   - GOTIT
+  - GRAY
+  - gCSI
+  - CCLE
+  - GDSC
