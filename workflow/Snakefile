@@ -2,19 +2,38 @@ configfile: "config/cohorts.yaml"
 
 rule all:
     input: 
-        expand("data/procdata/binarymat/{cohort}.csv", cohort = config["cohorts"]),
         expand("data/results/SLscores/{cohort}.csv", cohort = config["cohorts"])
         
 
+rule get_binary_mat:
+    input: 
+        counts = "data/rawdata/{cohort}_RSEM_TPM_reheadered.tsv"
+    params:
+        runtime = "48:00:00",
+        partition = "all"
+    output: 
+        bmatoutfile = "data/procdata/binarymat/{cohort}.csv"
+    threads: 4
+    resources: 
+        mem="30G",
+        time="48:00:00",
+        cpus=4,
+        partition="all"
+    shell:
+        """
+        python workflow/scripts/get_binary_mat.py \
+        --counts {input.counts} \
+        --bmatoutfile {output.bmatoutfile} \
+        """
+
 rule get_SL_scores:
     input: 
-        counts =  "data/rawdata/{cohort}_RSEM_TPM_reheadered.tsv"
+        bmat = "data/procdata/binarymat/{cohort}.csv"
     params:
         runtime = "48:00:00",
         SL_pairs = "data/procdata/SL_Pairs/human_venn_all_regions.csv",
         partition = "all"
     output: 
-        bmatoutfile = "data/procdata/binarymat/{cohort}.csv",
         SLoutfile = "data/results/SLscores/{cohort}.csv"
     threads: 4
     resources: 
@@ -25,8 +44,7 @@ rule get_SL_scores:
     shell:
         """
         python workflow/scripts/get_SL_scores.py \
-        --counts {input.counts} \
+        --bmat {input.bmat} \
         --SL_pairs {params.SL_pairs} \
-        --bmatoutfile {output.bmatoutfile} \
         --SLoutfile {output.SLoutfile} \
         """

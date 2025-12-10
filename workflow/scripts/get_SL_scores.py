@@ -5,16 +5,14 @@ import argparse
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--counts", help="RSEM TPM filepath", required=True)
+parser.add_argument("--bmat", help="output CSV path for binary matrix", required=True)
 parser.add_argument("--SL_pairs", help="path to SL pairs (from get networks)", required=True)
-parser.add_argument("--bmatoutfile", help="output CSV path for binary matrix", required=True)
 parser.add_argument("--SLoutfile", help="Output CSV path for SL scores", required=True)
 
 args = parser.parse_args()
 
-counts = args.counts
+bmat = args.bmat
 SL_pairs = args.SL_pairs
-bmatoutfile = args.bmatoutfile
 SLoutfile = args.SLoutfile
 
 
@@ -28,27 +26,7 @@ print("Loading in data")
 SL_pairs = pd.read_csv(SL_pairs)
 
 # load in expression matrix
-mat = pd.read_table(counts)
-
-########################################
-# Make binary matrix
-########################################
-
-print("Making binary matrix")
-
-# compute lower thirds
-mat["lower_third"] = (
-	mat[mat.columns[1:]]	# all but gene symbol column
-	.apply(lambda row: np.quantile(row.values, 0.33), axis=1)
-)
-
-# binarize by lower third
-sampleids = [c for c in mat.columns if c not in ["Hugo_Symbol", "lower_third"]]
-mat[sampleids] = (mat[sampleids].ge(mat["lower_third"], axis=0)).astype(int)
-mat = mat.drop(columns=["lower_third"])
-
-# save binary matrix
-mat.to_csv(bmatoutfile, index=False)
+mat = pd.read_csv(bmat)
 
 ########################################
 # Get SL Scores
