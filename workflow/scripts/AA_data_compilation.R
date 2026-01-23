@@ -4,6 +4,7 @@ suppressPackageStartupMessages({
     library(stringr)
     library(purrr)
     library(dplyr)
+    library(scales)
 })
 
 RAWDATA_DIR <- "/cluster/projects/bhklab/projects/SL_MOHCCN/data/rawdata/ecDNA/PM2C_Batch_1/"
