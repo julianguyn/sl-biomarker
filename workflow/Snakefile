@@ -21,7 +21,7 @@ rule get_binary_mat:
         partition="all"
     shell:
         """
-        python workflow/scripts/get_binary_mat.py \
+        python workflow/scripts/1-SL-pipeline/get_binary_mat.py \
         --counts {input.counts} \
         --bmatoutfile {output.bmatoutfile} \
         """
@@ -43,7 +43,7 @@ rule get_SL_scores:
         partition="all"
     shell:
         """
-        python workflow/scripts/get_SL_scores.py \
+        python workflow/scripts/1-SL-pipeline/get_SL_scores.py \
         --bmat {input.bmat} \
         --SL_pairs {params.SL_pairs} \
         --SLoutfile {output.SLoutfile} \
