@@ -16,7 +16,7 @@ set.seed(101)
 ###########################################################
 
 # get mutations
-mut <- fread("workflow/jackie/cbio_mafs/BTC_mutations_extended.txt")
+mut <- fread("data/procdata/cbio_mafs/BTC_mutations_extended.txt")
 mut <- mut[,c("Tumor_Sample_Barcode", "Hugo_Symbol", "Variant_Type", "oncogenic")]
 
 # list of oncogenes from OncoKB
