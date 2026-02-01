@@ -27,3 +27,5 @@ variant_pal <- c(
     "ING & DEL" = "#82645F",
     "INS & DEL" = "#AA968A"
 )
+
+teal <- "#395C6B"
