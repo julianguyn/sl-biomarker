@@ -9,18 +9,21 @@ suppressPackageStartupMessages({
 })
 
 source("workflow/scripts/utils/palettes.R")
-
 set.seed(101)
+
+cohort <- commandArgs(trailingOnly = TRUE)[1]
 
 ###########################################################
 # Load in data
 ###########################################################
 
 # get SL scores (keep only singleKO)
-sl_scores <- read.csv("data/results/data/SLscores/BTC.csv")
+filename <- paste0("data/results/data/SLscores/", cohort, ".csv")
+sl_scores <- read.csv(filename)
 
 # get mutations
-mut <- fread("data/procdata/cbio_mafs/BTC_mutations_extended.txt")
+filename <- paste0("data/procdata/cbio_mafs/", cohort, "_mutations_extended.txt")
+mut <- fread(filename)
 mut <- mut[,c("Tumor_Sample_Barcode", "Hugo_Symbol", "Variant_Type", "oncogenic")]
 
 # list of oncogenes from OncoKB
@@ -91,6 +94,8 @@ count_sko$Variable[count_sko$Variable == "count_SKO"] <- "All SKOs"
 count_sko$Variable[count_sko$Variable == "count_targetable"] <- "Targetable Unmutated Genes"
 
 # plot count of SKOs
+filename <- paste0("data/results/figures/SL-analysis/SKO_counts/", cohort, ".png")
+png(filename, width=4, height=4, units='in', res = 600, pointsize=80)
 ggplot(count_sko, aes(y = sample, x = Count)) +
     geom_bar(stat = "Identity", fill = teal) +
     facet_wrap(~Variable, scales = "free_x") +
@@ -98,8 +103,13 @@ ggplot(count_sko, aes(y = sample, x = Count)) +
     theme(
         axis.text.y = element_blank()
     ) +
-    labs(y = "Patient")
+    labs(y = "Patient", title = cohort)
+dev.off()
 
+# save counts
+count_sko$Cohort <- cohort
+filename <- paste0("data/results/data/SL-analysis/SKO_counts/", cohort, ".csv")
+write.csv(count_sko, file = filename, quote = FALSE, row.names = FALSE)
 
 ###########################################################
 # Top Targetable SKOs
@@ -113,13 +123,21 @@ sko_tmut <- sko_tmut %>%
 count_tar_sko <- sko_tmut %>%
     filter(targetable == TRUE) %>%
     group_by(pair) %>%
-    summarise(Count = n()) %>% 
+    summarise(Count = n()) %>%
     unique()
 count_tar_sko <- count_tar_sko[order(count_tar_sko$Count, decreasing = TRUE),]
 count_tar_sko$pair <- factor(count_tar_sko$pair, levels = rev(count_tar_sko$pair))
-count_tar_sko <- count_tar_sko[count_tar_sko$Count > 1,]
+
+# save counts of targetable SKOs
+count_tar_sko$Cohort <- cohort
+filename <- paste0("data/results/data/SL-analysis/SKO_targetable/", cohort, ".csv")
+write.csv(count_tar_sko, file = filename, quote = FALSE, row.names = FALSE)
 
 # plot count of top targetable SKOs
+count_tar_sko <- count_tar_sko[count_tar_sko$Count > 1,]
+
+filename <- paste0("data/results/figures/SL-analysis/SKO_top_targetable_counts/", cohort, ".png")
+png(filename, width=4, height=5, units='in', res = 600, pointsize=80)
 ggplot(count_tar_sko, aes(y = pair, x = Count)) +
     geom_bar(stat = "Identity", fill = teal) +
     theme_minimal() +
@@ -127,7 +145,9 @@ ggplot(count_tar_sko, aes(y = pair, x = Count)) +
         lim = c(0, max(count_tar_sko$Count + 0.5)),
         expand = c(0,0)
     ) +
-    labs(y = "Synthetic Lethal Pair")
+    labs(y = "Synthetic Lethal Pair", title = cohort)
+dev.off()
+##TODO: colour bars by targetable gene?
 
 ###########################################################
 # Prevalence of Targetable SKOs
@@ -163,10 +183,10 @@ ht <- Heatmap(
     rect_gp = gpar(col = "grey80", lwd = 0.5)
 )
 
-#filename <- paste0("data/results/figures/SL_exploration/heatmap.png")
-#png(filename, width = 13, height = 15, res = 600, units = "in")
+filename <- paste0("data/results/figures/SL-analysis/SKO_targetable_heatmap/", cohort, ".png")
+png(filename, width = 10, height = 10, res = 600, units = "in")
 print(draw(ht))
-#dev.off()
+dev.off()
 
 ###########################################################
 # Prevalence of Targetable Genes
@@ -195,11 +215,13 @@ pal <- colorRampPalette(c("#C0CDDD", "#00102F"))(99)
 pal <- c("white", pal)
 
 # plot heatmap
+filename <- paste0("data/results/figures/SL-analysis/SKO_targetable_genes_heatmap/", cohort, ".png")
+png(filename, width = 6, height = 6, res = 600, units = "in")
 ht <- Heatmap(
     bin_tar, name = "No.\nSKOs",
     show_column_names = FALSE,
     col = pal,
     rect_gp = gpar(col = "grey80", lwd = 0.5)
 )
-
-draw(ht)
+print(draw(ht))
+dev.off()
