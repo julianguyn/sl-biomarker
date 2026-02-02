@@ -28,4 +28,16 @@ variant_pal <- c(
     "INS & DEL" = "#AA968A"
 )
 
+cohort_pal <- c(
+    "BTC" = "#889379",
+    "COMPASS" = "#D1CDBA",
+    "GOTIT" = "#7B684A",
+    "INSPIRE" = "#D6BE94",
+    "IOALINES" = "#57644E",
+    "IRIS" = "#878C7D",
+    "MOHCCNO" = "#E8E1D9",
+    "OCTANE" = "#454A2C"
+)
+
 teal <- "#395C6B"
+olive = "#7E8D85"
