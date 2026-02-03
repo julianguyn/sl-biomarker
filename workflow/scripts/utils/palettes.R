@@ -40,4 +40,5 @@ cohort_pal <- c(
 )
 
 teal <- "#395C6B"
-olive = "#7E8D85"
+olive <- "#7E8D85"
+ash <- "#C3D1C0"

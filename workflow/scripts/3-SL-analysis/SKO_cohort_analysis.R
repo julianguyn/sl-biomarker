@@ -6,6 +6,7 @@ suppressPackageStartupMessages({
     library(ComplexHeatmap)
     library(RColorBrewer)
     library(readxl)
+    library(reshape2)
 })
 
 source("workflow/scripts/utils/palettes.R")
@@ -14,6 +15,9 @@ set.seed(101)
 ###########################################################
 # Load in data
 ###########################################################
+
+# load in cohort counts
+cohort_count <- readRDS("data/results/data/cohort_counts.RDS")
 
 # read in SKO counts
 SKO_count <- data.frame(matrix(nrow=0, ncol=0))
@@ -28,6 +32,47 @@ for (file in list.files("data/results/data/SL-analysis/SKO_targetable", full.nam
     counts <- read.csv(file)
     SKO_tar <- rbind(SKO_tar, counts)
 }
+
+###########################################################
+# Number of patients with SKOs
+###########################################################
+
+# get number of SKOs
+count_SKO <- SKO_count %>%
+    filter(Count > 0) %>%
+    select(-Count) %>%
+    unique() %>%
+    group_by(Cohort, Variable) %>%
+    summarise(Count_SKO = n()) %>%
+    pivot_wider(
+        names_from = Variable,
+        values_from = Count_SKO
+    )
+
+# get number of targetable SKOs
+cohort_count <- cbind(cohort_count, count_SKO) |> as.data.frame()
+cohort_count[,3] <- NULL
+
+# get proportion
+cohort_count$Prop_SKOs <- cohort_count$'All SKOs' / cohort_count$Count * 100
+cohort_count$Prop_tar <- cohort_count$'Targetable Unmutated Genes' / cohort_count$Count * 100
+
+###########################################################
+# Plot cohort counts
+###########################################################
+
+colnames(cohort_count)[2:4] <- c("All", "All SKOs", "Targetable SKOs")
+toPlot <- reshape2::melt(cohort_count)
+toPlot <- toPlot[-which(toPlot$variable %in% c("Prop_SKOs", "Prop_tar")),]
+
+filename <- paste0("data/results/figures/SL-analysis/All_Cohorts/Cohort_Counts.png")
+png(filename, width = 7, height = 5, res = 600, units = "in")
+ggplot(toPlot, aes(x = Cohort, y = value, fill = variable)) +
+    geom_bar(stat = "identity", position = position_dodge()) +
+    scale_fill_manual("", values = c(teal, olive, ash)) +
+    theme_minimal() +
+    labs(y = "Number of Patients")
+dev.off()
 
 ###########################################################
 # Format targetable SKO counts
