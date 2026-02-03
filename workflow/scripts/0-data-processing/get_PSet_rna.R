@@ -13,15 +13,26 @@ get_pset_SE <- function(pset) {
         message("Option not valid. Pick from: GRAY, gCSI, CCLE, GDSC2")
         return(NA)
     }
+    label <- pset
     if (pset == "GRAY") pset <- "PSet_GRAY2017"
     if (pset == "GDSC2") pset <- "GDSC2-8.2"
 
     pset_path <- paste0("../BCaATAC/data/rawdata/psets/", pset, ".rds")
-    pset <- readRDS(pset_path) |> updateObject()
+    pset_obj <- readRDS(pset_path) |> updateObject()
+
+    # get drug sensitivity
+    sen <- PharmacoGx::summarizeSensitivityProfiles(
+        pset_obj,
+        sensitivity.measure = "aac_recomputed",
+        fill.missing = FALSE,
+        summary.stat = "median"
+    ) |> t() |> as.data.frame()
+    filename <- paste0("data/procdata/psets/", label, "_sensitivity.csv")
+    write.csv(sen, file = filename, quote = FALSE, row.names = TRUE)
 
     # get TPM counts
     rna <- summarizeMolecularProfiles(
-        pset, 
+        pset_obj, 
         mDataType = "Kallisto_0.46.1.rnaseq"
     ) 
     return(rna)

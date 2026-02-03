@@ -130,3 +130,6 @@ ggplot(top_SKO_tar, aes(x = Count, y = pair, fill = Cohort)) +
     theme(axis.text.y = element_text(size = 6)) +
     labs(y = "Synthetic Lethal Pair")
 dev.off()
+
+# save top targetable SKOs
+saveRDS(top_SKO_tar, file = "data/results/data/top_SKO_tar.RDS")
