@@ -39,6 +39,13 @@ cohort_pal <- c(
     "OCTANE" = "#454A2C"
 )
 
+SL_pal <- c(
+    "SKO_targetable" = "#57536A",
+    "SKO_other" = "#937666",
+    "DKO" = "#D3C0CD",
+    "noKO" = "#C7A9A3"
+)
+
 teal <- "#395C6B"
 olive <- "#7E8D85"
 ash <- "#C3D1C0"

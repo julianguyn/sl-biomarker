@@ -4,6 +4,7 @@ suppressPackageStartupMessages({
     library(tidyverse)
     library(ggplot2)
     library(data.table)
+    library(readxl)
 })
 
 source("workflow/scripts/utils/palettes.R")
@@ -16,28 +17,43 @@ set.seed(101)
 # get top 50 targetable SKOs
 top_SKO_tar <- readRDS("data/results/data/top_SKO_tar.RDS")
 
-# load in CCLE RNAseq
-ccle <- fread("data/procdata/psets/CCLE_RSEM_TPM_reheadered.tsv", data.table = FALSE)
-rownames(ccle) <- ccle$Hugo_Symbol
-ccle$Hugo_Symbol <- NULL
+# read in targetable genes
+targets <- read_excel("data/rawdata/metadata/targeted_genes.xlsx", sheet = 1)
+colnames(targets) <- c("Gene", "Drug", "Brand", "Cancer")
+targets$Drug <- str_to_sentence(targets$Drug)
 
-# load in CCLE drug sensitivity
-sen <- read.csv("data/procdata/psets/CCLE_sensitivity.csv")
-rownames(sen) <- sen$X
-sen$X <- NULL
+# load in drug sensitivities
+load("data/procdata/psets/sensitivity_data.RData")
 
 ###########################################################
-# Check SL status
+# TODO:: Turn this into function:
 ###########################################################
-rna <- ccle
+
+# args:
+filepath <- "data/procdata/psets/CCLE_RSEM_TPM_reheadered.tsv"
 stat_options <- c('1st Qu.', 'Median', 'thirds')
 drug <- "Crizotinib"
-stat <- stat_options[2]
+stat <- stat_options[1]
+sen <- ctrp_sen
+pset <- "CTRP2"
+
+# load in rna
+rna <- fread(filepath, data.table = FALSE)
+rownames(rna) <- rna$Hugo_Symbol
+rna$Hugo_Symbol <- NULL
+
 
 for (i in 1:nrow(top_SKO_tar)) {
 
+    # get SKO pair
     gm <- top_SKO_tar$mutated_gene[i]
     gu <- top_SKO_tar$unmutated_gene[i]
+
+    # get targeted therapies
+    gu_targ <- targets$Drug[targets$Gene == gu]
+    sen_targ <- sen[rownames(sen) %in% gu_targ,]
+    if (nrow(sen_targ) == 0) next
+    sen_targ <- t(sen_targ) |> as.data.frame()
     
     # subset for SKO pair
     sub <- rna[rownames(rna) %in% c(gm, gu),] |>
@@ -65,21 +81,37 @@ for (i in 1:nrow(top_SKO_tar)) {
         if (sub[[gm]][i] == 0 & sub[[gu]][i] == 1) sub$status[i] <- "SKO_other"
         if (sub[[gm]][i] == 1 & sub[[gu]][i] == 1) sub$status[i] <- "noKO"
     }
+    sub$status <- factor(sub$status, levels = names(status_pal))
 
     # make dataframe of common cells
-    common_cells <- intersect(rownames(sub), rownames(sen))
+    common_cells <- intersect(rownames(sub), rownames(sen_targ))
     df <- data.frame(
         sample = common_cells,
-        SL = sub$status[match(common_cells, rownames(sub))],
-        sen = sen[[drug]][match(common_cells, rownames(sen))]
+        SL = sub$status[match(common_cells, rownames(sub))]
     )
 
-    ggplot(df, aes(x = SL, y = sen, fill = SL)) +
+    # iterate for every available drug
+    for (drug in rownames(sen_targ)) {
+        df$sensitivity <- sen_targ[[drug]][match(common_cells, rownames(sen_targ))]
+
+        # plot boxplots
+        p <- ggplot(df, aes(x = SL, y = sensitivity, fill = SL)) +
         geom_boxplot() + geom_jitter(width = 0.2, alpha = 0.5) +
+        scale_fill_manual("Synthetic Lethal\nInteraction", values = SL_pal) +
         theme_minimal() +
-        labs(y = "AAC", x = "Synthetic Lethal Interaction")
+        theme(panel.border = element_rect()) +
+        labs(y = paste(drug, "Response (AAC)"), x = "Synthetic Lethal Interaction") +
+        ggtitle(paste0("Dataset: ", pset, ", SKO: ", gm, " & ", gu))
+        
+        filename <- paste0("data/results/figures/CCL-top-SKOs/", pset, "_", gm, "-", gu, "_", drug, ".png")
+        png(filename, width = 6, height = 4.5, res = 600, units = "in")
+        print(p)
+        dev.off()
 
+        # perform t-tests
+        # todo: save results to dataframe per pset
 
+    }
 
 }
 
