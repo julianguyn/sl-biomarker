@@ -72,7 +72,10 @@ validate_SKOs <- function(rna, sen, stat, pset) {
         )
         rownames(stats) <- names(summary(sub[[gm]]))
         stats <- t(stats) |> as.data.frame()
-        stats$thirds <- (stats$Max - stats$Min)/3
+
+        # get thirds (non-parametric)
+        thirds <- apply(sub, 2, function(x) quantile(x, probs = 1/3, na.rm = TRUE))
+        stats$thirds <- c(thirds[[gm]], thirds[[gu]])
 
         # use selected stat to annotate KO
         sub[[gm]] <- ifelse(sub[[gm]] <= stats[[stat]][rownames(stats) == "Mutated"], 0, 1)
@@ -108,13 +111,14 @@ validate_SKOs <- function(rna, sen, stat, pset) {
             p <- ggplot(toPlot, aes(x = SL, y = sensitivity, fill = SL)) +
             geom_boxplot() + geom_jitter(width = 0.2, alpha = 0.5) +
             scale_fill_manual("Synthetic Lethal\nInteraction", values = SL_pal) +
+            scale_x_discrete(labels = c("SKO\n(Targeted)", "SKO\n(Other)", "DKO", "no KO")) +
             theme_minimal() +
             theme(panel.border = element_rect()) +
             labs(y = paste(drug, "Response (AAC)"), x = "Synthetic Lethal Interaction") +
             ggtitle(paste0("Dataset: ", pset, ", SKO: ", gm, " & ", gu))
             
             filename <- paste0("data/results/figures/CCL-top-SKOs/", stat_dir, "/", pset, "/", gm, "-", gu, "_", drug, ".png")
-            png(filename, width = 6, height = 4.5, res = 600, units = "in")
+            png(filename, width = 5, height = 4, res = 600, units = "in")
             print(p)
             dev.off()
 
