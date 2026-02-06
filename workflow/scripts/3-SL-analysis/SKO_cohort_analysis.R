@@ -171,7 +171,7 @@ ggplot(count_SKO, aes(x = log(Count), y = mutated_gene, fill = unmutated_gene)) 
     geom_bar(stat = "identity", color = "black", linewidth = 0.2) +
     scale_fill_manual("Unmutated Gene", values = palette_20) +
     theme_minimal() +
-    theme(legend.position = "none") +
+    theme(legend.position = "none", panel.border = element_rect()) +
     labs(y = "Mutated Gene", x = "Log-Normalized Count of Targetable SKOs")
 dev.off()
 
@@ -184,7 +184,7 @@ ggplot(count_SKO, aes(x = Count, y = mutated_gene, fill = unmutated_gene)) +
     scale_x_break(c(620, 900), scale = 0.2, ticklabels = c(900, 950)) +
     scale_fill_manual(values = palette_20) +
     theme_minimal() +
-    theme(legend.position = "none") +
+    theme(legend.position = "none", panel.border = element_rect()) +
     labs(y = "Mutated Gene", x = "Count of Targetable SKOs in Patients")
 dev.off()
 
