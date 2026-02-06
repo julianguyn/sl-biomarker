@@ -49,3 +49,22 @@ SL_pal <- c(
 teal <- "#395C6B"
 olive <- "#7E8D85"
 ash <- "#C3D1C0"
+
+three_pal <- c(
+    "All" = "#70625B",
+    "All SKOs" = "#A3928B",
+    "Targetable SKOs" = "#DAD6D4"
+)
+
+palette_20 <- c(
+  "#E8E3F0", "#4A4464",
+  "#D1CDBA", "#889379",
+  "#D4C4D9", "#6B5B7A",
+  "#D6BE94", "#7B684A",
+  "#E8E1D9", "#72756d",
+  "#8797AF", "#56667A",
+  "#AE6474", "#6d3c46",
+  "#c8cac7", "#454A2C",
+  "#B8A4C4", "#8B7A9A",
+  "#A89080", "#6E5A4A"
+)
