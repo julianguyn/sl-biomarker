@@ -188,3 +188,17 @@ ggplot(count_SKO, aes(x = Count, y = mutated_gene, fill = unmutated_gene)) +
     labs(y = "Mutated Gene", x = "Count of Targetable SKOs in Patients")
 dev.off()
 
+###########################################################
+# Plot pie chart
+###########################################################
+
+toPlot <- data.frame(
+    Label = c("Total", "SKO"),
+    Prop = c(100-76.2, 76.2)
+)
+
+ggplot(toPlot, aes(x="", y=Prop, fill=Label)) +
+  geom_bar(stat="identity", width=1, color="black", linewidth=1.25) +
+  coord_polar("y", start=0) +
+  scale_fill_manual(values = c("#812a2aff", "#ddd4d4")) +
+  theme_void()

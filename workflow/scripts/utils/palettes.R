@@ -41,8 +41,8 @@ cohort_pal <- c(
 
 SL_pal <- c(
     "SKO_targetable" = "#57536A",
-    "SKO_other" = "#937666",
     "DKO" = "#D3C0CD",
+    "SKO_other" = "#937666",
     "noKO" = "#C7A9A3"
 )
 
