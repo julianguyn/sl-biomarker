@@ -7,6 +7,7 @@ suppressPackageStartupMessages({
     library(reshape2)
     library(ComplexHeatmap)
     library(RColorBrewer)
+    library(viridis)
 })
 
 PROCDATA_DIR <- "data/procdata/"
@@ -14,6 +15,7 @@ RESULTS_DIR <- "data/results/"
 
 source("workflow/scripts/utils/plots.R")
 source("workflow/scripts/utils/palettes.R")
+source("workflow/scripts/utils/utils.R")
 
 ###########################################################
 # Load in data
@@ -103,6 +105,11 @@ plot_ecDNA_genes(ecDNA_amplicons, "all")
 ###########################################################
 
 # keep only ecDNA amplicons with amplified oncogene
+col <- "Oncogenes"
+ecDNA_amplicons$amplification <- ifelse(
+        ecDNA_amplicons[[col]] == "[]",
+        0, 1
+    )
 amplified_amplicons <- ecDNA_amplicons[ecDNA_amplicons$amplification == 1,]
 
 # get unique oncogenes
@@ -130,3 +137,40 @@ toPlot <- t(toPlot) |> as.data.frame()
 
 # plot heatmap
 plot_oncogene_heatmap(toPlot)
+
+###########################################################
+# Oncogenes amplified in ecDNA vs other classes
+###########################################################
+
+# get amplified oncogenes per class
+count_bfb <- get_amplified_oncogenes(AA_results, "BFB")
+count_cnc <- get_amplified_oncogenes(AA_results, "Complex-non-cyclic")
+count_ecd <- get_amplified_oncogenes(AA_results, "ecDNA")
+count_lin <- get_amplified_oncogenes(AA_results, "Linear")
+
+# merge data frame
+common_genes <- c(
+  count_bfb$Gene, count_cnc$Gene, count_ecd$Gene, count_lin$Gene
+) |> unique()
+toPlot <- data.frame(
+  Gene = common_genes,
+  BFB = NA,
+  CNC = NA,
+  ecDNA = NA,
+  Linear = NA
+)
+toPlot$BFB <- count_bfb$BFB[match(toPlot$Gene, count_bfb$Gene)]
+toPlot$CNC <- count_cnc$'Complex-non-cyclic'[match(toPlot$Gene, count_cnc$Gene)]
+toPlot$ecDNA <- count_ecd$ecDNA[match(toPlot$Gene, count_ecd$Gene)]
+toPlot$Linear <- count_lin$Linear[match(toPlot$Gene, count_lin$Gene)]
+
+# format dataframe for plotting
+toPlot[is.na(toPlot)] <- 0
+toPlot <- toPlot[order(toPlot$ecDNA, toPlot$BFB, toPlot$CNC, toPlot$Linear, decreasing = TRUE),]
+rownames(toPlot) <- toPlot$Gene
+toPlot$Gene <- NULL
+toPlot <- t(toPlot) |> as.data.frame()
+toPlot <- toPlot[,-which(colSums(toPlot) == 1)]
+
+# plot heatmap of oncogene detection
+plot_class_oncogene_heatmap(toPlot)

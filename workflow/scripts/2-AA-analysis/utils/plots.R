@@ -255,7 +255,7 @@ plot_ecDNA_genes <- function(ecDNA_amplicons, gene) {
 
 #' Plot heatmap of oncogenes
 #' 
-plot_oncogene_heatmap <- function(toPlot) {
+plot_oncogene_heatmap <- function(toPlot, label = "ecDNA") {
 
     # define colour palettes
     pal <- brewer.pal(brewer.pal.info["Paired", "maxcolors"], "Paired")
@@ -280,8 +280,27 @@ plot_oncogene_heatmap <- function(toPlot) {
         rect_gp = gpar(col = "grey80", lwd = 0.5)
     )
 
-    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/ecDNA_oncogenes_heatmap.png")
+    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/", label, "_oncogenes_heatmap.png")
+    cat("Saving figure to", filename, "\n")
     png(filename, width = 13, height = 15, res = 600, units = "in")
+    print(draw(ht))
+    dev.off()
+}
+
+#' Plot class comparison of heatmap of oncogenes
+#' 
+plot_class_oncogene_heatmap <- function(toPlot) {
+
+    ht <- Heatmap(
+        toPlot, name = "Oncogene\nDetection",
+        rect_gp = gpar(col = "grey80", lwd = 0.5),
+        col = magma(256),
+        column_names_gp = gpar(fontsize = 7)
+    )
+
+    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/class_oncogenes_heatmap.png")
+    cat("Saving figure to", filename, "\n")
+    png(filename, width = 15, height = 4, res = 600, units = "in")
     print(draw(ht))
     dev.off()
 }
