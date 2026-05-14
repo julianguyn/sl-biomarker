@@ -7,22 +7,45 @@ suppressPackageStartupMessages({
     library(scales)
 })
 
-RAWDATA_DIR <- "/cluster/projects/bhklab/projects/SL_MOHCCN/data/rawdata/ecDNA/PM2C_Batch_1/"
+###########################################################
+# Set variables
+###########################################################
+
+# data directories
+RAWDATA_DIR <- "/cluster/projects/bhklab/projects/SL_MOHCCN/data/rawdata/ecDNA/"
 PROCDATA_DIR <- "/cluster/projects/bhklab/projects/SL_MOHCCN/data/procdata/"
+
+# batches
+batches <- c("PM2C_Batch_1", "PM2C_Batch_2", "BCCA_Batch_1", "BCCA_Batch_2")
+# 461, 1275, 781, 1512
+# total: 4029 samples
 
 ###########################################################
 # Load in data
 ###########################################################
 
 # get samples (directory names)
-sample_names <- list.files(paste0(RAWDATA_DIR, "Amplicon_Architect"))
-samples <- data.frame(
-    cohort = sub("_.*", "", sample_names),
-    sample = sample_names
-)
+all_sample_names <- c()
+samples <- data.frame(matrix(nrow=0, ncol=4))
+for (batch in batches) {
+    if (batch != "BCCA_Batch_2") {
+        sample_names <- list.files(paste0(RAWDATA_DIR, batch, "/Amplicon_Architect"))
+        RESULT_DIR <- "/Amplicon_Architect/"
+    } else {
+        sample_names <- list.files(paste0(RAWDATA_DIR, batch, "/AA_OUTPUT"))
+        RESULT_DIR <- "/AA_OUTPUT/"
+    }
+    all_sample_names <- c(all_sample_names, sample_names)
+    samples <- rbind(samples, data.frame(
+        batch = batch,
+        rdir = RESULT_DIR,
+        cohort = sub("_.*", "", sample_names),
+        sample = sample_names
+    ))
+}
 
 ## TODO: missing BTC files
-samples <- samples[samples$cohort != "BTC", ]
+#samples <- samples[samples$cohort != "BTC", ]
 
 ###########################################################
 # Get AA summary text files
@@ -30,24 +53,11 @@ samples <- samples[samples$cohort != "BTC", ]
 
 # get AA summary text files
 samples$summary <- paste0(
-    RAWDATA_DIR, "Amplicon_Architect/",
+    RAWDATA_DIR, samples$batch, samples$rdir,
     samples$sample, "/",
     samples$sample, "_AA_results/",
     samples$sample, "_summary.txt"
 )
-
-# check all files exist
-#all_files <- list.files(
-#    paste0(RAWDATA_DIR, "Amplicon_Architect"),
-#    recursive = TRUE, 
-#    full.names = TRUE,
-#    pattern = "*_summary.txt"
-#)
-#checks <- samples$summary %in% all_files
-#if (all(checks) != TRUE) {
-#    message("The following summary files do not exist:")
-#    print(samples$summary[which(checks == FALSE)])
-#}
 
 ###########################################################
 # Get classification data filepaths
@@ -74,7 +84,7 @@ for (file in names(files)) {
     for (i in 1:nrow(samples)) {
         # get filepath
         samples[[file]][i] <- paste0(
-            RAWDATA_DIR, "Amplicon_Architect/",
+            RAWDATA_DIR, samples$batch, samples$rdir,
             samples$sample[i], "/",
             samples$sample[i], "_classification/",
             samples$sample[i], "_", files[file]
@@ -82,17 +92,29 @@ for (file in names(files)) {
     }
 
     # check all files exist
-    all_files <- list.files(
-        paste0(RAWDATA_DIR, "Amplicon_Architect"),
-        recursive = TRUE,
-        full.names = TRUE,
-        pattern = paste0("*", files[file])
+    all_files <- c(
+        list.files(
+            paste0(RAWDATA_DIR, batches[1], "/Amplicon_Architect/"), recursive = TRUE, full.names = TRUE,
+            pattern = paste0("*", files[file])
+        ),
+        list.files(
+            paste0(RAWDATA_DIR, batches[2], "/Amplicon_Architect/"), recursive = TRUE, full.names = TRUE,
+            pattern = paste0("*", files[file])
+        ),
+        list.files(
+            paste0(RAWDATA_DIR, batches[3], "/Amplicon_Architect/"), recursive = TRUE, full.names = TRUE,
+            pattern = paste0("*", files[file])
+        ),
+        list.files(
+            paste0(RAWDATA_DIR, batches[4], "/AA_OUTPUT/"), recursive = TRUE, full.names = TRUE,
+            pattern = paste0("*", files[file])
+        )
     )
     checks <- samples[[file]] %in% all_files
     if (all(checks) != TRUE) {
         message("The following output files do not exist:")
         f <- samples[[file]][which(checks == FALSE)]
-        print(sub("/cluster/projects/bhklab/projects/SL_MOHCCN/data/rawdata/ecDNA/PM2C_Batch_1/Amplicon_Architect/", "", f))
+        print(sub("/cluster/projects/bhklab/projects/SL_MOHCCN/data/rawdata/ecDNA/", "", f))
         missing <- c(missing, f)
     }
 }
