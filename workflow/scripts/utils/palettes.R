@@ -13,6 +13,11 @@ binary_pal2 <- c(
     "white"
 )
 
+binary_pal3 <- c(
+    "#668F80",
+    "#C3B59F"
+)
+
 amplicon_class_pal <- c(
     "BFB" = "#CC9979",
     "Complex-non-cyclic" = "#ECB8A5",

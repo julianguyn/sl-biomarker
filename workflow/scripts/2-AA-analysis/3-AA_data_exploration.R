@@ -15,6 +15,7 @@ RESULTS_DIR <- "data/results/"
 
 source("workflow/scripts/2-AA-analysis/utils/plots.R")
 source("workflow/scripts/2-AA-analysis/utils/utils.R")
+source("workflow/scripts/2-AA-analysis/utils/get_tables.R")
 source("workflow/scripts/utils/palettes.R")
 source("workflow/scripts/utils/cohorts.R")
 
@@ -24,40 +25,33 @@ source("workflow/scripts/utils/cohorts.R")
 
 # load in AA results
 AA_results <- readRDS(paste0(PROCDATA_DIR, "AA_output/AA_results.rds"))
-AA_results$cohort <- sub("_.*", "", AA_results$'Sample name')
-AA_results <- AA_results[!is.na(AA_results$'AA amplicon number'),]
 
-# load in ecDNA speciifc results
-ecDNA_amplicons <- readRDS(paste0(PROCDATA_DIR, "AA_output/ecDNA_amplicons.rds"))
-ecDNA_amplicons$cohort <- sub("_.*", "", ecDNA_amplicons$'Sample name')
+# load in all samples
+all_samples <- readRDS(paste0(PROCDATA_DIR, "AA_output/sample_df.rds"))
 
-# load in ecDNA counts
-ecDNA_counts <- read.csv(paste0(PROCDATA_DIR, "AA_output/ecDNA_counts.csv"))
+# process cohort names (from utils/get_tables.R)
+AA_results <- process_cohort_names(AA_results)
+all_samples <- process_cohort_names(all_samples)
 
 ###########################################################
-# Process cohort names
+# Figure out duplicates
 ###########################################################
 
-# process AA_results
-PM2C_AA_results <- AA_results[AA_results$cohort %in% PM2C_cohorts,]
-BCCA_AA_results <- AA_results[-which(AA_results$cohort %in% PM2C_cohorts),]
+table(AA_results$'Sample name' %in% all_samples$sample)
 
-for (cohort in BCCA_cohorts) {
-  BCCA_AA_results$cohort[grep(cohort, BCCA_AA_results$cohort)] <- cohort
-}
+###########################################################
+# Proportion of samples with amplicons and ecDNA
+###########################################################
 
-PM2C_AA_results$Centre <- "PM2C"
-BCCA_AA_results$Centre <- "BCCA"
+missing <- all_samples[all_samples$result_table == "missing",]
 
-AA_results <- rbind(PM2C_AA_results, BCCA_AA_results)
 
-# process ecDNA counts
-ecDNA_counts$cohort <- AA_results$cohort[match(ecDNA_counts$sample, AA_results$'Sample name')]
-ecDNA_counts$Centre <- AA_results$Centre[match(ecDNA_counts$sample, AA_results$'Sample name')]
 
 ###########################################################
 # Number of samples (w amplicon) per cohort
 ###########################################################
+
+AA_results <- AA_results[!is.na(AA_results$'AA amplicon number'),]
 
 plot_num_patients(AA_results)
 
