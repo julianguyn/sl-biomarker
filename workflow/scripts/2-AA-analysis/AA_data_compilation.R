@@ -1,10 +1,8 @@
 # load libraries
 suppressPackageStartupMessages({
     library(data.table)
-    library(stringr)
     library(purrr)
     library(dplyr)
-    library(scales)
 })
 
 ###########################################################
@@ -48,80 +46,36 @@ for (batch in batches) {
 #samples <- samples[samples$cohort != "BTC", ]
 
 ###########################################################
-# Get AA summary text files
+# Manually extract files
 ###########################################################
 
-# get AA summary text files
-samples$summary <- paste0(
-    RAWDATA_DIR, samples$batch, samples$rdir,
-    samples$sample, "/",
-    samples$sample, "_AA_results/",
-    samples$sample, "_summary.txt"
-)
+samples$dir <- paste0(RAWDATA_DIR, samples$batch, samples$rdir)
+samples$result_table <- NA_character_
+samples$ecDNA_counts <- NA_character_
 
-###########################################################
-# Get classification data filepaths
-###########################################################
+for (i in 1:nrow(samples)) {
 
-# files to get
-files <- c(
-    #"amp_classification" = "amplicon_classification_profiles.tsv",
-    "result_table" = "result_table.tsv",
-    #"gene_list" = "gene_list.tsv",
-    #"feature_basic_properties" = "feature_basic_properties.tsv",
-    #"feature_entropy" = "feature_entropy.tsv",
-    "ecDNA_counts" = "ecDNA_counts.tsv"#,
-    #"ecDNA_context_calls" = "ecDNA_context_calls.tsv"
-)
+    # result_table
+    result_table <- list.files(
+        paste0(samples$dir[i], samples$sample[i], "/", samples$sample[i], "_classification/"),
+        recursive = TRUE, full.names = TRUE,
+        pattern = paste0("result_table.tsv"))
+    samples$result_table[i] <- ifelse(length(result_table) > 0, result_table, "missing")
 
-# build dataframe of filepaths
-missing <- c()
-for (file in names(files)) {
-
-    # make column
-    samples[[file]] <- NA_character_
-
-    for (i in 1:nrow(samples)) {
-        # get filepath
-        samples[[file]][i] <- paste0(
-            RAWDATA_DIR, samples$batch, samples$rdir,
-            samples$sample[i], "/",
-            samples$sample[i], "_classification/",
-            samples$sample[i], "_", files[file]
-        )
-    }
-
-    # check all files exist
-    all_files <- c(
-        list.files(
-            paste0(RAWDATA_DIR, batches[1], "/Amplicon_Architect/"), recursive = TRUE, full.names = TRUE,
-            pattern = paste0("*", files[file])
-        ),
-        list.files(
-            paste0(RAWDATA_DIR, batches[2], "/Amplicon_Architect/"), recursive = TRUE, full.names = TRUE,
-            pattern = paste0("*", files[file])
-        ),
-        list.files(
-            paste0(RAWDATA_DIR, batches[3], "/Amplicon_Architect/"), recursive = TRUE, full.names = TRUE,
-            pattern = paste0("*", files[file])
-        ),
-        list.files(
-            paste0(RAWDATA_DIR, batches[4], "/AA_OUTPUT/"), recursive = TRUE, full.names = TRUE,
-            pattern = paste0("*", files[file])
-        )
-    )
-    checks <- samples[[file]] %in% all_files
-    if (all(checks) != TRUE) {
-        message("The following output files do not exist:")
-        f <- samples[[file]][which(checks == FALSE)]
-        print(sub("/cluster/projects/bhklab/projects/SL_MOHCCN/data/rawdata/ecDNA/", "", f))
-        missing <- c(missing, f)
-    }
+    # ecDNA_counts
+    ecDNA_counts <- list.files(
+        paste0(samples$dir[i], samples$sample[i], "/", samples$sample[i], "_classification/"),
+        recursive = TRUE, full.names = TRUE,
+        pattern = paste0("ecDNA_counts.tsv"))
+    samples$ecDNA_counts[i] <- ifelse(length(ecDNA_counts) > 0, ecDNA_counts, "missing")
 }
+saveRDS(samples, file = paste0(PROCDATA_DIR, "AA_output/sample_df.rds"))
 
 ###########################################################
 # Compile AA results
 ###########################################################
+
+samples <- samples[samples$result_table != "missing",]
 
 # rbind all result table files
 message("\nCompiling AA results")
@@ -139,7 +93,7 @@ saveRDS(
 )
 
 # get ecDNA-classified amplicons
-ecDNA_amplicons <- AA_results[Classification == "ecDNA"]
+ecDNA_amplicons <- AA_results[AA_results$Classification == "ecDNA"]
 
 message("Saving ecDNA AA_results")
 saveRDS(
