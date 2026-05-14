@@ -42,9 +42,6 @@ for (batch in batches) {
     ))
 }
 
-## TODO: missing BTC files
-#samples <- samples[samples$cohort != "BTC", ]
-
 ###########################################################
 # Manually extract files
 ###########################################################
@@ -69,13 +66,46 @@ for (i in 1:nrow(samples)) {
         pattern = paste0("ecDNA_counts.tsv"))
     samples$ecDNA_counts[i] <- ifelse(length(ecDNA_counts) > 0, ecDNA_counts, "missing")
 }
+
+###########################################################
+# Label duplicates
+###########################################################
+
+dups <- samples$sample[duplicated(samples$sample)]
+dups <- samples[samples$sample %in% dups,]
+dups$temp_id <- paste0(dups$batch, dups$sample)
+
+BCCA_Batch_1 <- dups[dups$batch == "BCCA_Batch_1",]
+BCCA_Batch_2 <- dups[dups$batch == "BCCA_Batch_2",]
+PM2C_Batch_1 <- dups[dups$batch == "PM2C_Batch_1",]
+PM2C_Batch_2 <- dups[dups$batch == "PM2C_Batch_2",]
+
+table(BCCA_Batch_1$sample %in% BCCA_Batch_2$sample)
+table(PM2C_Batch_1$sample %in% PM2C_Batch_2$sample)
+
+# label duplicates
+samples$temp_id <- paste0(samples$batch, samples$sample)
+samples$duplicated <- "not_duplicated"
+samples$duplicated[samples$temp_id %in% BCCA_Batch_2$temp_id] <- "duplicated_kept"
+samples$duplicated[samples$temp_id %in% PM2C_Batch_2$temp_id] <- "duplicated_kept"
+samples$duplicated[samples$temp_id %in% BCCA_Batch_1$temp_id] <- "duplicated_removed"
+samples$duplicated[samples$temp_id %in% PM2C_Batch_1$temp_id] <- "duplicated_removed"
+
 saveRDS(samples, file = paste0(PROCDATA_DIR, "AA_output/sample_df.rds"))
+
+# remove duplicates
+samples$temp_id <- NULL
+samples <- samples[-which(samples$duplicated == "duplicated_removed"),]
+# 826 duplicates, 781 from PM2C, 45 from BCCA
+# 2377 not duplicated
+# 3203 total after removing duplicates
 
 ###########################################################
 # Compile AA results
 ###########################################################
 
 samples <- samples[samples$result_table != "missing",]
+# of 3203 samples, 805 have no amplicons, remaining = 2398 samples
 
 # rbind all result table files
 message("\nCompiling AA results")
