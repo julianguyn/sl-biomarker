@@ -16,6 +16,7 @@ RESULTS_DIR <- "data/results/"
 source("workflow/scripts/2-AA-analysis/utils/plots.R")
 source("workflow/scripts/2-AA-analysis/utils/utils.R")
 source("workflow/scripts/utils/palettes.R")
+source("workflow/scripts/utils/cohorts.R")
 
 ###########################################################
 # Load in data
@@ -34,11 +35,31 @@ ecDNA_amplicons$cohort <- sub("_.*", "", ecDNA_amplicons$'Sample name')
 ecDNA_counts <- read.csv(paste0(PROCDATA_DIR, "AA_output/ecDNA_counts.csv"))
 
 ###########################################################
+# Process cohort names
+###########################################################
+
+# process AA_results
+PM2C_AA_results <- AA_results[AA_results$cohort %in% PM2C_cohorts,]
+BCCA_AA_results <- AA_results[-which(AA_results$cohort %in% PM2C_cohorts),]
+
+for (cohort in BCCA_cohorts) {
+  BCCA_AA_results$cohort[grep(cohort, BCCA_AA_results$cohort)] <- cohort
+}
+
+PM2C_AA_results$Centre <- "PM2C"
+BCCA_AA_results$Centre <- "BCCA"
+
+AA_results <- rbind(PM2C_AA_results, BCCA_AA_results)
+
+# process ecDNA counts
+ecDNA_counts$cohort <- AA_results$cohort[match(ecDNA_counts$sample, AA_results$'Sample name')]
+ecDNA_counts$Centre <- AA_results$Centre[match(ecDNA_counts$sample, AA_results$'Sample name')]
+
+###########################################################
 # Number of samples (w amplicon) per cohort
 ###########################################################
 
-toPlot <- table(unique(AA_results[,1:2])$cohort) |> as.data.frame()
-
+plot_num_patients(AA_results)
 
 ###########################################################
 # Number of amplicons in each sample
@@ -46,11 +67,12 @@ toPlot <- table(unique(AA_results[,1:2])$cohort) |> as.data.frame()
 
 # get number of amplicons per sample
 num_amplicons <- data.frame(table(AA_results$'Sample name'))
-num_amplicons$cohort <- sub("_.*", "", num_amplicons$Var1)
+num_amplicons$cohort <- AA_results$cohort[match(num_amplicons$Var1, AA_results$'Sample name')]
+num_amplicons$Centre <- AA_results$Centre[match(num_amplicons$Var1, AA_results$'Sample name')]
 
 # plot number of amplicons
-plot_num_amplicons(num_amplicons)
-plot_num_amplicons2(num_amplicons)
+plot_num_amplicons(num_amplicons) # without outliers, highest is 62 (GOLDEN)
+#plot_num_amplicons2(num_amplicons)
 
 ###########################################################
 # Number of genes in each sample
@@ -66,8 +88,8 @@ AA_results$n_genes_all <- lengths(
     strsplit(gsub("\\[|\\]|'", "", AA_results$'All genes'), ",\\s*")
 )
 
-plot_num_genes(AA_results, "oncogene")
-plot_num_genes(AA_results, "all")
+#plot_num_genes(AA_results, "oncogene")
+#plot_num_genes(AA_results, "all")
 
 ###########################################################
 # Count of ecDNA per sample

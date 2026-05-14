@@ -1,3 +1,8 @@
+centre_pal <- c(
+    "PM2C" = "#829CBA",
+    "BCCA" = "#C5AFA0"
+)
+
 binary_pal <- c(
     "#073062",
     "white"

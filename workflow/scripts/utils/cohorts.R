@@ -1,0 +1,7 @@
+PM2C_cohorts <- c(
+  "BDWGTS", "BIOCAN", "BIODIVA", "BTC", "CHARM", "COMPASSMOH", "CPCGMOH", "DELISH",
+  "ERMOH", "GOLDEN", "HCC", "HCCCFD", "HCCMOH", "HRPCP", "INSIGHTM", "IOALINES",
+  "IRIS", "KLCS", "MOHCCNO", "MYC", "MYR", "OCT", "PALMS", "PANX", "READILY",
+  "REFLECT", "SAMBA", "TGL01", "TGL49", "TRACER"
+)
+BCCA_cohorts <- c("AML", "BRECID", "GTB", "HNR", "LNGR", "LYM", "OCC", "PAN", "POG", "SRC")

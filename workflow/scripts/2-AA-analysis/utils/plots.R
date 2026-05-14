@@ -1,36 +1,60 @@
 #' Plot number of patients
 #' 
-plot_num_patients <- function(toPlot) {
-    p <- ggplot(toPlot, aes(x = Var1, y = Freq)) +
-        geom_bar(stat = "identity", color = "black", fill = binary_pal[1]) +
+plot_num_patients <- function(AA_results) {
+
+    toPlot <- table(unique(AA_results[,1:2])$cohort) |> as.data.frame()
+    toPlot$Centre <- ifelse(toPlot$Var1 %in% PM2C_cohorts, "PM2C", "BCCA")
+    toPlot$Centre <- factor(toPlot$Centre, levels = names(centre_pal))
+    toPlot$Var1 <- factor(toPlot$Var1, levels = c(PM2C_cohorts, BCCA_cohorts))
+
+    p <- ggplot(toPlot, aes(x = Var1, y = Freq, fill = Centre)) +
+        geom_bar(stat = "identity", color = "black") +
         geom_text(
             aes(label = Freq),
             vjust = -0.3,
             color = "black",
             size = 3
         ) +
+        scale_fill_manual(values = centre_pal) +
         theme_classic() +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
         labs(y = "Number of Smples (with Amplicons)", x = "Cohort")
 
     filename <- paste0(RESULTS_DIR, "figures/AA_exploration/num_patients.png")
-    png(filename, width = 11, height = 4, res = 600, units = "in")
+    png(filename, width = 13, height = 4, res = 600, units = "in")
     print(p)
     dev.off()
 }
 
 #' Plot number of amplicons in each sample
 #' 
-plot_num_amplicons <- function(num_amplicons) {
-    p <- ggplot(num_amplicons, aes(x = cohort, y = Freq)) +
-        geom_boxplot(outlier.colour = "grey70", fill = "grey70") + 
-        geom_jitter(width = 0.25, size = 0.8) +
+plot_num_amplicons <- function(toPlot) {
+
+    toPlot$Centre <- factor(toPlot$Centre, levels = names(centre_pal))
+    toPlot$cohort <- factor(toPlot$cohort, levels = c(PM2C_cohorts, BCCA_cohorts))
+
+    p <- ggplot(toPlot, aes(x = cohort, y = Freq, fill = Centre)) +
+        geom_boxplot() + 
+        #geom_jitter(width = 0.25, size = 0.8, alpha = 0.5) +
+        scale_fill_manual(values = centre_pal) +
         theme_classic() +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
         labs(x = "Cohort", y = "Number of Amplicons in Sample")
 
     filename <- paste0(RESULTS_DIR, "figures/AA_exploration/num_amplicons.png")
-    png(filename, width = 11, height = 4, res = 600, units = "in")
-    print(p)
-    dev.off()
+    ggsave(filename, p, width = 13, height = 4)
+
+    p <- ggplot(toPlot, aes(x = cohort, y = Freq, fill = Centre)) +
+        geom_boxplot(outlier.shape = NA) + 
+        scale_y_continuous(limits = c(0, 65)) +
+        #geom_jitter(width = 0.25, size = 0.8, alpha = 0.5) +
+        scale_fill_manual(values = centre_pal) +
+        theme_classic() +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+        labs(x = "Cohort", y = "Number of Amplicons in Sample")
+
+    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/num_amplicons_rmoutliers.png")
+    ggsave(filename, p, width = 13, height = 4)
 }
 
 plot_num_amplicons2 <- function(num_amplicons) {
