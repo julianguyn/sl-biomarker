@@ -13,9 +13,9 @@ suppressPackageStartupMessages({
 PROCDATA_DIR <- "data/procdata/"
 RESULTS_DIR <- "data/results/"
 
-source("workflow/scripts/utils/plots.R")
+source("workflow/scripts/2-AA-analysis/utils/plots.R")
+source("workflow/scripts/2-AA-analysis/utils/utils.R")
 source("workflow/scripts/utils/palettes.R")
-source("workflow/scripts/utils/utils.R")
 
 ###########################################################
 # Load in data
