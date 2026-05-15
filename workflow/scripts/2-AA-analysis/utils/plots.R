@@ -46,7 +46,7 @@ plot_num_amplicons <- function(toPlot) {
 
     p <- ggplot(toPlot, aes(x = cohort, y = Freq, fill = Centre)) +
         geom_boxplot(outlier.shape = NA) + 
-        scale_y_continuous(limits = c(0, 65)) +
+        scale_y_continuous(limits = c(0, 120)) +
         #geom_jitter(width = 0.25, size = 0.8, alpha = 0.5) +
         scale_fill_manual(values = centre_pal) +
         theme_classic() +
@@ -73,6 +73,139 @@ plot_num_amplicons2 <- function(num_amplicons) {
 
     filename <- paste0(RESULTS_DIR, "figures/AA_exploration/num_amplicons_density.png")
     png(filename, width = 5, height = 6, res = 600, units = "in")
+    print(p)
+    dev.off()
+}
+
+#' Plot proportion of amplicon classes across cohorts
+#' 
+plot_amplicon_class <- function(toPlot, label) {
+
+    # get 
+
+    # amplicon class of amplified genes
+    if (label == "all_amplicons") {
+        toPlot <- toPlot %>%
+            group_by(cohort, Classification) %>%
+            summarise(total = n(), .groups = "drop") %>%
+            group_by(cohort) %>%
+            mutate(prop = total / sum(total) * 100)
+    } else if (label == "amplified_oncogenes") {
+        toPlot <- toPlot %>%
+            group_by(cohort, Classification) %>%
+            summarise(total = sum(n_genes), .groups = "drop") %>%
+            group_by(cohort) %>%
+            mutate(prop = total / sum(total) * 100)
+    }
+    
+
+    toPlot$Classification <- factor(toPlot$Classification, levels = names(amplicon_class_pal))
+
+    p <- ggplot(toPlot, aes(x = cohort, y = prop, fill = Classification)) +
+            geom_col(color = "black") +
+            geom_text(
+                aes(label = total),
+                position = position_stack(vjust = 0.5),
+                color = "black",
+                size = 3
+            ) +
+            scale_fill_manual(values = amplicon_class_pal) + 
+            theme_classic() +
+            theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+            labs(x = "Cohort", y = "Proportion of samples (%)", fill = "Amplicon\nClass")
+
+    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/amplicon_class_", label, ".png")
+    png(filename, width = 13, height = 4, res = 600, units = "in")
+    print(p)
+    dev.off()
+}
+
+#' Plot distribution of feature median / maximum copy number per amplicon class
+#' 
+#' @param variable string. 'Feature median copy number' or 'Feature maximum copy number'
+#' 
+plot_fmcn <- function(toPlot, variable) {
+
+  label <- ifelse(
+    variable == 'Feature median copy number',
+    "fmedcn", "fmaxcn"
+  )
+
+  toPlot$Classification <- factor(toPlot$Classification, levels = names(amplicon_class_pal))
+
+  p <- ggplot(toPlot, aes(x = Classification, y = .data[[variable]], fill = Classification)) +
+    geom_boxplot() +
+    scale_y_continuous(limits = c(0, 275)) +
+    facet_wrap(~cohort, ncol = 10) +
+    scale_fill_manual(values = amplicon_class_pal) +
+    theme_bw() +
+    theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+  filename <- paste0(RESULTS_DIR, "figures/AA_exploration/", label, ".png")
+  ggsave(filename, p, w = 15, h = 6)
+
+  p <- ggplot(toPlot, aes(x = Classification, y = .data[[variable]], fill = Classification)) +
+    geom_boxplot(outlier.shape = NA) +
+    scale_y_continuous(limits = c(0, 80)) +
+    facet_wrap(~cohort, ncol = 10) +
+    scale_fill_manual(values = amplicon_class_pal) +
+    theme_bw() +
+    theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+  filename <- paste0(RESULTS_DIR, "figures/AA_exploration/", label, "_no_outliers.png")
+  ggsave(filename, p, w = 15, h = 6)
+}
+
+#' Plot proportion of samples with ecDNA
+#' 
+#' @param type string. ecDNA classification ("all" or "binary")
+#' 
+plot_ecDNA_prop <- function(ecDNA_counts, type = "all") {
+
+    # binarize ecDNA presence
+    if (type == "binary") {
+        ecDNA_counts$count[ecDNA_counts$count > 0] <- 1
+    }
+
+    # plot distribution of all counts
+    toPlot <- ecDNA_counts %>%
+        count(cohort, count) %>%
+        group_by(cohort) %>%
+        mutate(prop = n / sum(n) * 100)
+    toPlot$count <- factor(toPlot$count, levels = c(max(toPlot$count):0))
+    
+    # add labels
+    if (type == "all") {
+        toPlot$label <- ifelse(
+            toPlot$count == 1,
+            paste0(toPlot$n, "\n(", round(toPlot$prop), "%)"),
+            ""
+        )
+    } else {
+        toPlot$label <- paste0(toPlot$n, "\n(", round(toPlot$prop), "%)")
+    }
+    fill_lab <- ifelse(type == "all", "ecDNA count\nin sample", "ecDNA\nDetection")
+    
+
+    # create palette
+    pal <- switch(type, all = binary_pal, binary = binary_pal2)
+    n <- max(as.integer(as.character(toPlot$count))) + 1
+    pal <- colorRampPalette(pal)(n)
+
+    p <- ggplot(toPlot, aes(x = cohort, y = prop, fill = factor(count))) +
+        geom_col(color = "black") +
+        geom_text(
+            aes(label = label),
+            position = position_stack(vjust = 0.5),
+            color = "black",
+            size = 3
+        ) +
+        scale_fill_manual(values = pal) + 
+        theme_classic() +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+        labs(x = "Cohort", y = "Proportion of samples (%)", fill = fill_lab)
+
+
+    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/ecDNA_counts_", type, ".png")
+    png(filename, width = 15, height = 4, res = 600, units = "in")
     print(p)
     dev.off()
 }
@@ -105,61 +238,6 @@ plot_num_genes <- function(num_amplicons, gene) {
 
     filename <- paste0(RESULTS_DIR, "figures/AA_exploration/num_genes_", lab, ".png")
     png(filename, width = 5, height = 6, res = 600, units = "in")
-    print(p)
-    dev.off()
-}
-
-#' Plot proportion of ecDNA counts across cohorts
-#' 
-#' @param type string. ecDNA classification ("all" or "binary")
-#' 
-plot_ecDNA_counts <- function(ecDNA_counts, type = "all") {
-
-    # binarize ecDNA presence
-    if (type == "binary") {
-        ecDNA_counts$count[ecDNA_counts$count > 0] <- 1
-    }
-
-    # plot distribution of all counts
-    toPlot <- ecDNA_counts %>%
-        count(cohort, count) %>%
-        group_by(cohort) %>%
-        mutate(prop = n / sum(n) * 100)
-    toPlot$count <- factor(toPlot$count, levels = c(max(toPlot$count):0))
-    
-    # add labels
-    if (type == "all") {
-        toPlot$label <- ifelse(
-            toPlot$count == 0,
-            paste0(toPlot$n, "\n(", round(toPlot$prop, 2), "%)"),
-            ""
-        )
-    } else {
-        toPlot$label <- paste0(toPlot$n, "\n(", round(toPlot$prop, 2), "%)")
-    }
-    fill_lab <- ifelse(type == "all", "ecDNA count\nin sample", "ecDNA\nDetection")
-    
-
-    # create palette
-    pal <- switch(type, all = binary_pal, binary = binary_pal2)
-    n <- max(as.integer(as.character(toPlot$count))) + 1
-    pal <- colorRampPalette(pal)(n)
-
-    p <- ggplot(toPlot, aes(x = cohort, y = prop, fill = factor(count))) +
-        geom_col(color = "black") +
-        geom_text(
-            aes(label = label),
-            position = position_stack(vjust = 0.5),
-            color = "black",
-            size = 3
-        ) +
-        scale_fill_manual(values = pal) + 
-        theme_classic() +
-        labs(x = "Cohort", y = "Proportion of samples (%)", fill = fill_lab)
-
-
-    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/ecDNA_counts_", type, ".png")
-    png(filename, width = 11, height = 4, res = 600, units = "in")
     print(p)
     dev.off()
 }
@@ -200,34 +278,6 @@ plot_oncogene_counts <- function(toPlot) {
 
 
     filename <- paste0(RESULTS_DIR, "figures/AA_exploration/oncogene_counts.png")
-    png(filename, width = 11, height = 4, res = 600, units = "in")
-    print(p)
-    dev.off()
-}
-
-#' Plot proportion of amplicon classes across cohorts
-#' 
-plot_amplicon_class <- function(toPlot) {
-    toPlot <- toPlot %>%
-        group_by(cohort, Classification) %>%
-        summarise(total_genes = sum(n_genes), .groups = "drop") %>%
-        group_by(cohort) %>%
-        mutate(prop = total_genes / sum(total_genes) * 100)
-    toPlot$Classification <- factor(toPlot$Classification, levels = names(amplicon_class_pal))
-
-    p <- ggplot(toPlot, aes(x = cohort, y = prop, fill = Classification)) +
-            geom_col(color = "black") +
-            geom_text(
-                aes(label = total_genes),
-                position = position_stack(vjust = 0.5),
-                color = "black",
-                size = 3
-            ) +
-            scale_fill_manual(values = amplicon_class_pal) + 
-            theme_classic() +
-            labs(x = "Cohort", y = "Proportion of samples (%)", fill = "Amplicon\nClass")
-
-    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/amplicon_class_amplified_oncogenes.png")
     png(filename, width = 11, height = 4, res = 600, units = "in")
     print(p)
     dev.off()
