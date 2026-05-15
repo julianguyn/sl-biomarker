@@ -30,22 +30,18 @@ AA_results <- readRDS(paste0(PROCDATA_DIR, "AA_output/AA_results.rds"))
 all_samples <- readRDS(paste0(PROCDATA_DIR, "AA_output/sample_df.rds"))
 
 # process cohort names (from utils/get_tables.R)
-AA_results <- process_cohort_names(AA_results)
+AA_results <- process_cohort_names(AA_results, res = TRUE)
 all_samples <- process_cohort_names(all_samples)
 
 ###########################################################
-# Figure out duplicates
+# Preprocessing
 ###########################################################
 
-table(AA_results$'Sample name' %in% all_samples$sample)
+# remove duplicates
+all_samples <- all_samples[-which(all_samples$duplicated == "duplicated_removed"),]
 
-###########################################################
-# Proportion of samples with amplicons and ecDNA
-###########################################################
-
-missing <- all_samples[all_samples$result_table == "missing",]
-
-
+# remove missing amplicons
+all_samples <- all_samples[-which(all_samples$result_table == "missing"),]
 
 ###########################################################
 # Number of samples (w amplicon) per cohort

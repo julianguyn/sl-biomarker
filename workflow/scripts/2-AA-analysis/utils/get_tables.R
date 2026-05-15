@@ -4,8 +4,9 @@
 #' source("workflow/scripts/utils/cohorts.R")
 #' Column 'cohort' from parent directory of AA output folders
 #' 
-process_cohort_names <- function(df) {
+process_cohort_names <- function(df, res = FALSE) {
 
+  if (res == TRUE) df$cohort <- sub("_.*", "", df$'Sample name')
   PM2C_results <- df[df$cohort %in% PM2C_cohorts,]
   BCCA_results <- df[-which(df$cohort %in% PM2C_cohorts),]
 
