@@ -2,8 +2,7 @@
 suppressPackageStartupMessages({
     library(data.table)
     library(ggplot2)
-    library(ggridges)
-    library(dplyr)
+    library(tidyverse)
     library(reshape2)
     library(ComplexHeatmap)
     library(RColorBrewer)
@@ -83,10 +82,8 @@ count_oncogene <- count_oncogene[order(count_oncogene$Freq, decreasing = TRUE),]
 top_oncogene <- count_oncogene[count_oncogene$Freq >= 20,]
 
 # AOV + tukey test
-case_examples <- as.character(top_oncogene$Var1)
-
 sig_ecdna_linear <- c()
-for (gene in case_examples) {
+for (gene in as.character(top_oncogene$Var1)) {
     subset_df <- oncogene_df[oncogene_df$oncogene == gene,]
     # feature median CN AOV and tukey test
     aov.res <- aov(Feature_median_copy_number ~ Classification, data = subset_df)
@@ -102,76 +99,10 @@ for (gene in case_examples) {
 plot_top_amp_oncogenes(top_oncogene, oncogene_df, sig_ecdna_linear)
 
 ###########################################################
-# Prevalence of amplified oncogenes of ecDNA
+# Top prevalent oncogenes per amplicon class
 ###########################################################
 
-# keep only ecDNA amplicons with amplified oncogene
-col <- "Oncogenes"
-ecDNA_amplicons$amplification <- ifelse(
-        ecDNA_amplicons[[col]] == "[]",
-        0, 1
-    )
-amplified_amplicons <- ecDNA_amplicons[ecDNA_amplicons$amplification == 1,]
-
-# get unique oncogenes
-oncogenes <- unlist(
-  strsplit(gsub("\\[|\\]|'", "", amplified_amplicons$Oncogenes), ",\\s*")
-) |> unique()
-# logic check
-for (gene in oncogenes) {
-  if (length(grep(gene, oncogenes)) > 1) print(paste("Need to check", gene))
-}
-
-# initate dataframe to store results
-toPlot <- data.frame(matrix(nrow=nrow(amplified_amplicons), ncol=length(oncogenes)))
-colnames(toPlot) <- c(oncogenes)
-rownames(toPlot) <- amplified_amplicons$'Feature ID'
-
-# binarize oncogene detection
-for (gene in oncogenes) {
-  toPlot[[gene]][grep(gene, amplified_amplicons$Oncogenes)] <- 1
-}
-
-# format for plotting
-toPlot[is.na(toPlot)] <- 0
-toPlot <- t(toPlot) |> as.data.frame()
-
-# plot heatmap
-plot_oncogene_heatmap(toPlot)
-
-###########################################################
-# Oncogenes amplified in ecDNA vs other classes
-###########################################################
-
-# get amplified oncogenes per class
-count_bfb <- get_amplified_oncogenes(AA_results, "BFB")
-count_cnc <- get_amplified_oncogenes(AA_results, "Complex-non-cyclic")
-count_ecd <- get_amplified_oncogenes(AA_results, "ecDNA")
-count_lin <- get_amplified_oncogenes(AA_results, "Linear")
-
-# merge data frame
-common_genes <- c(
-  count_bfb$Gene, count_cnc$Gene, count_ecd$Gene, count_lin$Gene
-) |> unique()
-toPlot <- data.frame(
-  Gene = common_genes,
-  BFB = NA,
-  CNC = NA,
-  ecDNA = NA,
-  Linear = NA
-)
-toPlot$BFB <- count_bfb$BFB[match(toPlot$Gene, count_bfb$Gene)]
-toPlot$CNC <- count_cnc$'Complex-non-cyclic'[match(toPlot$Gene, count_cnc$Gene)]
-toPlot$ecDNA <- count_ecd$ecDNA[match(toPlot$Gene, count_ecd$Gene)]
-toPlot$Linear <- count_lin$Linear[match(toPlot$Gene, count_lin$Gene)]
-
-# format dataframe for plotting
-toPlot[is.na(toPlot)] <- 0
-toPlot <- toPlot[order(toPlot$ecDNA, toPlot$BFB, toPlot$CNC, toPlot$Linear, decreasing = TRUE),]
-rownames(toPlot) <- toPlot$Gene
-toPlot$Gene <- NULL
-toPlot <- t(toPlot) |> as.data.frame()
-toPlot <- toPlot[,-which(colSums(toPlot) == 1)]
-
-# plot heatmap of oncogene detection
-plot_class_oncogene_heatmap(toPlot)
+plot_top_amp_oncogenes_class(oncogene_df, "BFB")
+plot_top_amp_oncogenes_class(oncogene_df, "Complex-non-cyclic")
+plot_top_amp_oncogenes_class(oncogene_df, "Linear")
+plot_top_amp_oncogenes_class(oncogene_df, "ecDNA")

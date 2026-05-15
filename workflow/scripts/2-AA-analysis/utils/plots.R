@@ -439,54 +439,49 @@ plot_top_amp_oncogenes <- function(top_oncogene, oncogene_df, sig_ecdna_linear) 
     ggsave(filename, p, width = 11, height = 5)
 }
 
-#' Plot heatmap of oncogenes
+#' Plot top oncogenes by amplicon class
 #' 
-plot_oncogene_heatmap <- function(toPlot, label = "ecDNA") {
+plot_top_amp_oncogenes_class <- function(oncogene_df, class) {
 
-    # define colour palettes
-    pal <- brewer.pal(brewer.pal.info["Paired", "maxcolors"], "Paired")
-    n_cohorts <- length(unique(sub("_.*", "", colnames(toPlot))))
-    pal <- pal[1:n_cohorts]
-    names(pal) <- unique(sub("_.*", "", colnames(toPlot)))
+    toPlot <- oncogene_df[oncogene_df$Classification == class,]
+    count_gene <- data.frame(table(toPlot$oncogene))
+    count_gene <- count_gene[order(count_gene$Freq, decreasing = TRUE),]
+    top_genes <- as.character(count_gene$Var1[1:30])
 
-    # plot heatmap of oncogene detection
-    row_ha <- rowAnnotation(num_features = rowSums(toPlot))
-    col_ha <- HeatmapAnnotation(
-        sample = sub("_amplicon.*", "", colnames(toPlot)),
-        cohort = sub("_.*", "", colnames(toPlot)),
-        col = list(cohort = pal)
-    )
+    toPlot <- toPlot[toPlot$oncogene %in% top_genes,]
+    toPlot$oncogene <- factor(toPlot$oncogene, levels = top_genes)
+    count_gene$Var1 <- factor(count_gene$Var1, levels = top_genes)
 
-    ht <- Heatmap(
-        toPlot, name = "Oncogene\nDetection", 
-        top_annotation = col_ha, right_annotation = row_ha,
-        show_column_names = FALSE,
-        col = c("0" = binary_pal[2], "1" = binary_pal[1]),
-        cluster_columns = FALSE,
-        rect_gp = gpar(col = "grey80", lwd = 0.5)
-    )
 
-    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/", label, "_oncogenes_heatmap.png")
-    cat("Saving figure to", filename, "\n")
-    png(filename, width = 13, height = 15, res = 600, units = "in")
-    print(draw(ht))
-    dev.off()
-}
+    # plot count of oncogenes
+    p1 <- ggplot(count_gene[1:30,], aes(x = Var1, y = Freq)) +
+        geom_bar(stat = "identity") +
+        geom_text(
+                aes(label = Freq),
+                vjust = -0.3,
+                color = "black",
+                size = 3
+            ) +
+        scale_y_continuous(limits = c(0, max(count_gene$Freq)+4)) +
+        theme_bw() +
+        theme(
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.x = element_blank()
+        ) +
+        labs(y = "No. Amplicons\nw Oncogene")
 
-#' Plot class comparison of heatmap of oncogenes
-#' 
-plot_class_oncogene_heatmap <- function(toPlot) {
+    p2 <- ggplot(toPlot, aes(x = oncogene, y = log2(Feature_median_copy_number))) +
+        geom_violin(fill = amplicon_class_pal[class]) +
+        geom_boxplot(width = 0.2, fill = amplicon_class_pal[class]) +
+        theme_bw() + 
+        theme(
+            axis.text.x = element_text(angle = 25, hjust = 1),
+            axis.title.x = element_blank()
+        ) +
+        labs(y = "log2(Median CN)")
 
-    ht <- Heatmap(
-        toPlot, name = "Oncogene\nDetection",
-        rect_gp = gpar(col = "grey80", lwd = 0.5),
-        col = magma(256),
-        column_names_gp = gpar(fontsize = 7)
-    )
-
-    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/class_oncogenes_heatmap.png")
-    cat("Saving figure to", filename, "\n")
-    png(filename, width = 15, height = 4, res = 600, units = "in")
-    print(draw(ht))
-    dev.off()
+    p <- p1 / p2 + plot_layout(height = c(1, 2))
+    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/gene_analysis/amp_oncogenes_", class, ".png")
+    ggsave(filename, p, width = 11, height = 4)
 }
