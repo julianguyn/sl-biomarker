@@ -83,7 +83,7 @@ plot_amplicon_class <- function(toPlot, label) {
             summarise(total = sum(n_genes_all), .groups = "drop") %>%
             group_by(cohort) %>%
             mutate(prop = total / sum(total) * 100)
-        dir <- "gene_analysis"
+        dir <- "gene_exploration"
     }
     
 
@@ -229,7 +229,7 @@ plot_oncogene_counts <- function(toPlot) {
         labs(x = "Cohort", y = "Proportion of samples (%)", fill = "Amplified\nOncogene(s)")
 
 
-    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/gene_analysis/prop_have_oncogene.png")
+    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/gene_exploration/prop_have_oncogene.png")
     png(filename, width = 15, height = 4, res = 600, units = "in")
     print(p)
     dev.off()
@@ -276,7 +276,7 @@ plot_fmcn_genes <- function(toPlot, med_tukey, max_tukey, label) {
     }
 
     p <- p1 + p2
-    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/gene_analysis/amplified_", label, "_CN_amplicon_class.png")
+    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/gene_exploration/amplified_", label, "_CN_amplicon_class.png")
     ggsave(filename, p, w = 10, h = 6)
 }
 
@@ -320,10 +320,123 @@ plot_ecDNA_genes <- function(ecDNA_amplicons, gene) {
              fill = paste0("Presence of\n", col, " on\necDNA Amplicon"))
 
 
-    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/gene_analysis/genes_", gene, "_on_ecDNA.png")
+    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/gene_exploration/genes_", gene, "_on_ecDNA.png")
     png(filename, width = 13, height = 4, res = 600, units = "in")
     print(p)
     dev.off()
+}
+
+#' Plot top oncogenes across amplicon classes and CN
+#' 
+plot_top_amp_oncogenes <- function(top_oncogene, oncogene_df, sig_ecdna_linear) {
+
+    onco_order <- top_oncogene$Var1
+    top_oncogene$Var1 <- factor(top_oncogene$Var1, levels = onco_order)
+
+    # plot count of oncogenes
+    p1 <- ggplot(top_oncogene, aes(x = Var1, y = Freq)) +
+        geom_bar(stat = "identity") +
+        geom_text(
+                aes(label = Freq),
+                vjust = -0.3,
+                color = "black",
+                size = 3
+            ) +
+        scale_y_continuous(limits = c(0, 73)) +
+        theme_bw() +
+        theme(
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.x = element_blank()
+        ) +
+        labs(y = "No. Amplicons\nw Oncogene")
+
+    # plot proportion of amplicon class with oncogene
+    toPlot <- oncogene_df[oncogene_df$oncogene %in% onco_order,]
+    toPlot <- toPlot %>%
+        group_by(oncogene, Classification) %>%
+        summarise(total = n(), .groups = "drop") %>%
+        group_by(oncogene) %>%
+        mutate(prop = total / sum(total) * 100)
+    toPlot$oncogene <- factor(toPlot$oncogene, levels = onco_order)
+    toPlot$Classification <- factor(toPlot$Classification, levels = names(amplicon_class_pal))
+    p2 <- ggplot(toPlot, aes(x = oncogene, y = prop, fill = Classification)) +
+        geom_col(color = "black") +
+        geom_text(
+            aes(label = total),
+            position = position_stack(vjust = 0.5),
+            color = "black",
+            size = 3
+        ) +
+        scale_fill_manual(values = amplicon_class_pal) + 
+        theme_bw() +
+        theme(
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.x = element_blank()
+        ) +
+        labs(x = "Oncogene", y = "Proportion of\namplicons (%)", fill = "Amplicon\nClass")
+
+    # heatmap of sig_ecdna_linear
+    toPlot <- data.frame(oncogene = onco_order, sig = ifelse(onco_order %in% sig_ecdna_linear, 1, 0))
+    toPlot$oncogene <- factor(toPlot$oncogene, levels = onco_order)
+    toPlot$sig <- factor(toPlot$sig, levels = c(1:0))
+
+    p3 <- ggplot(toPlot, aes(x = oncogene, y = "", fill = sig)) +
+        geom_tile(color = "black") +
+        scale_fill_manual(values = c(unname(amplicon_class_pal["ecDNA"]), "white")) +
+        theme_void() +
+        theme(legend.position = "none")
+
+    # helper function to plot distribution of feature median CN
+    helper_plot_fmcn_class <- function(df, class) {
+
+        toPlot <- df[df$oncogene %in% onco_order,]
+        toPlot <- toPlot[toPlot$Classification == class,]
+        toPlot$oncogene <- factor(toPlot$oncogene, levels = onco_order)
+
+        p <- ggplot(toPlot, aes(x = oncogene, y = log2(Feature_median_copy_number))) +
+            geom_boxplot(fill = amplicon_class_pal[class]) +
+            geom_jitter(width = 0.2, alpha = 0.3) +
+            scale_x_discrete(drop = FALSE) +
+            scale_y_continuous(limits = c(2, 7.5)) +
+            theme_bw() +
+            theme(axis.text.x = element_text(angle = 25, hjust = 1)) +
+            labs(y = "log2(Median\nCopy Number)", x = "Oncogene")
+        if (class != "ecDNA") {
+            p <- p + theme(
+                axis.text.x = element_blank(),
+                axis.ticks.x = element_blank(),
+                axis.title.x = element_blank()
+            )
+        }
+        return(p)
+    }
+
+    p4 <- helper_plot_fmcn_class(oncogene_df, "BFB")
+    p5 <- helper_plot_fmcn_class(oncogene_df, "Complex-non-cyclic")
+    p6 <- helper_plot_fmcn_class(oncogene_df, "Linear")
+    p7 <- helper_plot_fmcn_class(oncogene_df, "ecDNA")
+
+    p <- p1 / p2 / p3 / p4 / p5 / p6 / p7 + plot_layout(heights = c(3,4,1,3,3,3,3))
+
+    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/gene_analysis/top_amp_oncogenes.png")
+    ggsave(filename, p, w = 13, h = 8)
+
+    # case examples of top 10 amplified oncogenes
+    toPlot <- oncogene_df[oncogene_df$oncogene %in% onco_order[1:10],]
+    toPlot$oncogene <- factor(toPlot$oncogene, levels = onco_order[1:10])
+    toPlot$Classification <- factor(toPlot$Classification, levels = names(amplicon_class_pal))
+
+    p <- ggplot(toPlot, aes(x = Classification, y = log2(Feature_median_copy_number), fill = Classification)) +
+        geom_violin() + geom_boxplot(width = 0.2) +
+        facet_wrap(~oncogene, ncol=5, scales = "free_y") +
+        scale_fill_manual(values = amplicon_class_pal) +
+        scale_x_discrete(labels = c("BFB", "Complex\nnon-cyclic", "Linear", "ecDNA")) +
+        theme_bw() +
+        theme(legend.position = "none", axis.title.x = element_blank())
+    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/gene_analysis/top_amp_oncogene_cases.png")
+    ggsave(filename, p, width = 11, height = 5)
 }
 
 #' Plot heatmap of oncogenes
