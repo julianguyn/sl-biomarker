@@ -485,3 +485,141 @@ plot_top_amp_oncogenes_class <- function(oncogene_df, class) {
     filename <- paste0(RESULTS_DIR, "figures/AA_exploration/gene_analysis/amp_oncogenes_", class, ".png")
     ggsave(filename, p, width = 11, height = 4)
 }
+
+#' Plot top genes across amplicon classes and CN
+#' displays if gene is oncogene
+#' 
+plot_top_amp_genes <- function(top_gene, all_genes_df) {
+
+    gene_order <- top_gene$Var1
+    top_gene$Var1 <- factor(top_gene$Var1, levels = gene_order)
+    top_gene$oncogene <- factor(top_gene$oncogene, levels = c("Oncogene", "Not"))
+
+    # plot count of oncogenes
+    p1 <- ggplot(top_gene, aes(x = Var1, y = Freq, fill = oncogene)) +
+        geom_bar(stat = "identity", color = "black") +
+        geom_text(
+                aes(label = Freq),
+                vjust = -0.3,
+                color = "black",
+                size = 3
+            ) +
+        scale_y_continuous(limits = c(0, 1000)) +
+        scale_fill_manual(values = binary_pal) +
+        theme_bw() +
+        theme(
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.x = element_blank()
+        ) +
+        labs(y = "No. Amplicons\nw Gene")
+
+    # plot proportion of amplicon class with oncogene
+    toPlot <- all_genes_df[all_genes_df$gene %in% gene_order,]
+    toPlot <- toPlot %>%
+        group_by(gene, Classification) %>%
+        summarise(total = n(), .groups = "drop") %>%
+        group_by(gene) %>%
+        mutate(prop = total / sum(total) * 100)
+    toPlot$gene <- factor(toPlot$gene, levels = gene_order)
+    toPlot$Classification <- factor(toPlot$Classification, levels = names(amplicon_class_pal))
+    p2 <- ggplot(toPlot, aes(x = gene, y = prop, fill = Classification)) +
+        geom_col(color = "black") +
+        geom_text(
+            aes(label = total),
+            position = position_stack(vjust = 0.5),
+            color = "black",
+            size = 3
+        ) +
+        scale_fill_manual(values = amplicon_class_pal) + 
+        theme_bw() +
+        theme(
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.x = element_blank()
+        ) +
+        labs(x = "Gene", y = "Proportion of\namplicons (%)", fill = "Amplicon\nClass")
+
+    # helper function to plot distribution of feature median CN
+    helper_plot_fmcn_class <- function(df, class) {
+
+        toPlot <- df[df$gene %in% gene_order,]
+        toPlot <- toPlot[toPlot$Classification == class,]
+        toPlot$gene <- factor(toPlot$gene, levels = gene_order)
+
+        p <- ggplot(toPlot, aes(x = gene, y = log2(Feature_median_copy_number))) +
+            geom_boxplot(fill = amplicon_class_pal[class]) +
+            scale_x_discrete(drop = FALSE) +
+            #scale_y_continuous(limits = c(2, 7.5)) +
+            theme_bw() +
+            theme(axis.text.x = element_text(angle = 25, hjust = 1)) +
+            labs(y = "log2(Median\nCopy Number)", x = "Gene")
+        if (class != "ecDNA") {
+            p <- p + theme(
+                axis.text.x = element_blank(),
+                axis.ticks.x = element_blank(),
+                axis.title.x = element_blank()
+            )
+        }
+        return(p)
+    }
+
+    p3 <- helper_plot_fmcn_class(all_genes_df, "BFB")
+    p4 <- helper_plot_fmcn_class(all_genes_df, "Complex-non-cyclic")
+    p5 <- helper_plot_fmcn_class(all_genes_df, "Linear")
+    p6 <- helper_plot_fmcn_class(all_genes_df, "ecDNA")
+
+    p <- p1 / p2 / p3 / p4 / p5 / p6 + plot_layout(heights = c(3,4,3,3,3,3))
+
+    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/gene_analysis/top_amp_all_genes.png")
+    ggsave(filename, p, w = 15, h = 8)
+}
+
+#' Plot top oncogenes by amplicon class
+#' 
+plot_top_amp_all_genes_class <- function(all_genes_df, class) {
+
+    toPlot <- all_genes_df[all_genes_df$Classification == class,]
+    count_gene <- data.frame(table(toPlot$gene))
+    count_gene <- count_gene[order(count_gene$Freq, decreasing = TRUE),]
+    top_genes <- as.character(count_gene$Var1[1:30])
+
+    toPlot <- toPlot[toPlot$gene %in% top_genes,]
+    toPlot$gene <- factor(toPlot$gene, levels = top_genes)
+    count_gene$Var1 <- factor(count_gene$Var1, levels = top_genes)
+    count_gene$oncogene <- toPlot$oncogene[match(count_gene$Var1, toPlot$gene)]
+    count_gene$oncogene <- factor(count_gene$oncogene, levels = c("Oncogene", "Not"))
+
+    # plot count of oncogenes
+    p1 <- ggplot(count_gene[1:30,], aes(x = Var1, y = Freq, fill = oncogene)) +
+        geom_bar(stat = "identity", color = "black") +
+        geom_text(
+                aes(label = Freq),
+                vjust = -0.3,
+                color = "black",
+                size = 3
+            ) +
+        scale_fill_manual(values = binary_pal) +
+        scale_y_continuous(limits = c(0, max(count_gene$Freq)+25)) +
+        theme_bw() +
+        theme(
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.x = element_blank()
+        ) +
+        labs(y = "No. Amplicons\nw Gene")
+
+    p2 <- ggplot(toPlot, aes(x = gene, y = log2(Feature_median_copy_number))) +
+        geom_violin(fill = amplicon_class_pal[class]) +
+        geom_boxplot(width = 0.2, fill = amplicon_class_pal[class]) +
+        theme_bw() + 
+        theme(
+            axis.text.x = element_text(angle = 25, hjust = 1),
+            axis.title.x = element_blank()
+        ) +
+        labs(y = "log2(Median CN)")
+
+    p <- p1 / p2 + plot_layout(height = c(1, 2))
+    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/gene_analysis/amp_all_genes_", class, ".png")
+    ggsave(filename, p, width = 11, height = 4)
+}

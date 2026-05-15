@@ -53,6 +53,10 @@ AA_results <- AA_results[,-c(6,9,16:28)]
 # fix column names
 colnames(AA_results) <- gsub(" ", "_", colnames(AA_results))
 
+# -------------------------------------------------------------
+# Oncogene-specific analysis
+# -------------------------------------------------------------
+
 ###########################################################
 # Split genes and extract gene features
 ###########################################################
@@ -106,3 +110,65 @@ plot_top_amp_oncogenes_class(oncogene_df, "BFB")
 plot_top_amp_oncogenes_class(oncogene_df, "Complex-non-cyclic")
 plot_top_amp_oncogenes_class(oncogene_df, "Linear")
 plot_top_amp_oncogenes_class(oncogene_df, "ecDNA")
+
+# -------------------------------------------------------------
+# All gene anlaysis
+# -------------------------------------------------------------
+
+###########################################################
+# Split genes and extract gene features
+###########################################################
+
+# get oncogenes
+amplified_gene <- AA_results[AA_results$All_genes != "[]",] # 5864 amplicons with oncogene
+all_genes <- unlist(
+  strsplit(gsub("\\[|\\]|'", "", amplified_gene$All_genes), ",\\s*")
+) |> unique() # 16805 unique amplified oncogenes
+
+# create new dataframe
+all_genes_df <- data.frame(matrix(nrow=0, ncol=10))
+for (gene in all_genes) {
+    samples <- amplified_gene[grep(gene, amplified_gene$All_genes),c(1:2, 5, 8:9, 11:12, 14)]
+    samples$gene <- gene
+    samples$oncogene <- ifelse(gene %in% oncogenes, "Oncogene", "Not")
+    all_genes_df <- rbind(all_genes_df, samples)
+}
+
+saveRDS(all_genes_df, file = paste0(PROCDATA_DIR, "AA_exploration/all_genes_df.rds"))
+
+###########################################################
+# Top amplified genes across all amplicon classes
+###########################################################
+
+count_gene <- data.frame(table(all_genes_df$gene))
+count_gene <- count_gene[order(count_gene$Freq, decreasing = TRUE),]
+count_gene$oncogene <- ifelse(count_gene$Var1 %in% oncogenes, "Oncogene", "Not")
+
+# subset for top 50
+top_gene <- count_gene[1:50,]
+
+# AOV + tukey test
+sig_ecdna_linear <- c()
+for (gene in as.character(top_gene$Var1)) {
+    subset_df <- all_genes_df[all_genes_df$gene == gene,]
+    # feature median CN AOV and tukey test
+    aov.res <- aov(Feature_median_copy_number ~ Classification, data = subset_df)
+    tukey <- TukeyHSD(aov.res)$Classification |> as.data.frame()
+    sig_tukey <- tukey[tukey$"p adj" < 0.05,]
+    if (nrow(sig_tukey) > 0) {
+        if ("Linear-ecDNA" %in% rownames(sig_tukey)) {
+            sig_ecdna_linear <- c(sig_ecdna_linear, gene)
+        }
+    }
+} # 0 sig results here which is weird bc MYC is here for example
+
+plot_top_amp_genes(top_gene, all_genes_df)
+
+###########################################################
+# Top prevalent oncogenes per amplicon class
+###########################################################
+
+plot_top_amp_all_genes_class(all_genes_df, "BFB")
+plot_top_amp_all_genes_class(all_genes_df, "Complex-non-cyclic")
+plot_top_amp_all_genes_class(all_genes_df, "Linear")
+plot_top_amp_all_genes_class(all_genes_df, "ecDNA")
