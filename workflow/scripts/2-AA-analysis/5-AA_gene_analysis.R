@@ -5,6 +5,7 @@ suppressPackageStartupMessages({
     library(tidyverse)
     library(reshape2)
     library(ComplexHeatmap)
+    library(circlize)
     library(RColorBrewer)
     library(viridis)
     library(ggsignif)
@@ -44,7 +45,7 @@ all_samples <- all_samples[-which(all_samples$duplicated == "duplicated_removed"
 all_samples <- all_samples[-which(all_samples$result_table == "missing"),]
 
 # remove NA amplicons
-AA_results <- AA_results[!is.na(AA_results$'AA amplicon number'),]
+AA_results <- AA_results[!is.na(AA_results$'AA amplicon number'),] |> as.data.frame()
 all_samples <- all_samples[all_samples$sample %in% AA_results$'Sample name',]
 
 # remove unneeded columns from AA_results
@@ -70,7 +71,7 @@ oncogenes <- unlist(
 # create new dataframe
 oncogene_df <- data.frame(matrix(nrow=0, ncol=9))
 for (oncogene in oncogenes) {
-    samples <- amplified_onco[grep(oncogene, amplified_onco$Oncogene),c(1:2, 5, 8:9, 11:12, 14)]
+    samples <- amplified_onco[grep(oncogene, amplified_onco$Oncogene),c(1:2, 4:5, 8:9, 11:12, 14)]
     samples$oncogene <- oncogene
     oncogene_df <- rbind(oncogene_df, samples)
 }
@@ -111,6 +112,16 @@ plot_top_amp_oncogenes_class(oncogene_df, "Complex-non-cyclic")
 plot_top_amp_oncogenes_class(oncogene_df, "Linear")
 plot_top_amp_oncogenes_class(oncogene_df, "ecDNA")
 
+###########################################################
+# ecDNA context analysis
+###########################################################
+
+ecDNA <- oncogene_df[oncogene_df$Classification == "ecDNA",]
+
+plot_ecDNA_context(ecDNA)
+
+plot_ecDNA_top_oncogene_heatmap(ecDNA)
+
 # -------------------------------------------------------------
 # All gene anlaysis
 # -------------------------------------------------------------
@@ -119,7 +130,7 @@ plot_top_amp_oncogenes_class(oncogene_df, "ecDNA")
 # Split genes and extract gene features
 ###########################################################
 
-# get oncogenes
+# get genes
 amplified_gene <- AA_results[AA_results$All_genes != "[]",] # 5864 amplicons with oncogene
 all_genes <- unlist(
   strsplit(gsub("\\[|\\]|'", "", amplified_gene$All_genes), ",\\s*")
@@ -135,6 +146,8 @@ for (gene in all_genes) {
 }
 
 saveRDS(all_genes_df, file = paste0(PROCDATA_DIR, "AA_exploration/all_genes_df.rds"))
+
+all_genes_df <- readRDS(paste0(PROCDATA_DIR, "AA_exploration/all_genes_df.rds"))
 
 ###########################################################
 # Top amplified genes across all amplicon classes

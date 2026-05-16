@@ -486,6 +486,122 @@ plot_top_amp_oncogenes_class <- function(oncogene_df, class) {
     ggsave(filename, p, width = 11, height = 4)
 }
 
+#' Plot distribution of ecDNA context classes across ecDNA
+#' 
+plot_ecDNA_context <- function(ecDNA) {
+    ecDNA$ecDNA_context <- factor(
+        ecDNA$ecDNA_context,
+        levels = names(ecDNA_context_pal)
+    )
+    plot_labels <- c("BFB-like", "Heavily rearranged\nmultichromosomal",
+                "Heavily rearranged\nunichromosomal",
+                "Simple circular\ncomplex background",
+                "Simple circular\nsimple background",
+                "Two-foldback", "Unknown")
+
+    toPlot <- unique(ecDNA[,colnames(ecDNA) %in% c("Feature_ID", "ecDNA_context")])
+
+    p1 <- ggplot(toPlot, aes(x = ecDNA_context, fill = ecDNA_context)) +
+        geom_bar(color = "black") +
+        scale_fill_manual(values = ecDNA_context_pal) +
+        scale_x_discrete(labels = plot_labels) +
+        theme_bw() +
+        theme(
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.x = element_blank(),
+            legend.position = "none"
+        ) +
+        labs(y = "No. Unique ecDNA")
+
+    p2 <- ggplot(ecDNA, aes(x = ecDNA_context, fill = ecDNA_context)) +
+        geom_bar(color = "black") +
+        scale_fill_manual(values = ecDNA_context_pal) +
+        scale_x_discrete(labels = plot_labels) +
+        theme_bw() +
+        theme(
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.x = element_blank()
+        ) +
+        labs(y = "No. Oncogenes")
+
+    p3 <- ggplot(ecDNA, aes(x = ecDNA_context, y = log2(Feature_median_copy_number), fill = ecDNA_context)) +
+        geom_violin() + geom_boxplot(width = 0.2) +
+        scale_fill_manual(values = ecDNA_context_pal) +
+        scale_x_discrete(labels = plot_labels) +
+        theme_bw() +
+        theme(legend.position = "none") +
+        labs(y = "log2(Median CN)", x = "\necDNA Context")
+
+    p <- p1 / p2 / p3
+    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/gene_analysis/ecDNA_oncogenes_context.png")
+    ggsave(filename, p, width = 11, height = 6)
+}
+
+#' Plot prevalence of top oncogenes in ecDNA
+#' 
+plot_ecDNA_top_oncogene_heatmap <- function(ecDNA) {
+
+    # remove genes in only one ecDNA
+    count_gene <- data.frame(table(ecDNA$oncogene))
+    count_gene <- count_gene[order(count_gene$Freq, decreasing = TRUE),]
+    count_gene <- count_gene[count_gene$Freq >= 5,]
+    ecDNA <- ecDNA[ecDNA$oncogene %in% count_gene$Var1,]
+
+    toPlot <- ecDNA %>%
+        select(Feature_ID, oncogene, Feature_median_copy_number) %>%
+        pivot_wider(
+            names_from = "Feature_ID",
+            values_from = "Feature_median_copy_number"
+        ) %>%
+        column_to_rownames("oncogene")
+    toPlot[is.na(toPlot)] <- 0
+
+
+    # make anno
+    anno <- unique(ecDNA[,c(1,3,6,9)])
+    anno <- anno[match(colnames(toPlot), anno$Feature_ID),]
+    table(anno$Feature_ID == colnames(toPlot))
+
+    count_gene <- count_gene[match(rownames(toPlot), count_gene$Var1),]
+    table(count_gene$Var1 == rownames(toPlot))
+
+    ha1 <- HeatmapAnnotation(
+        Centre = anno$Centre,
+        ecDNA_context = anno$ecDNA_context,
+        col = list(Centre = centre_pal, ecDNA_context = ecDNA_context_pal),
+        annotation_name_side = "left",
+        annotation_name_gp = gpar(fontsize = 9)
+    )
+
+    row_ha = rowAnnotation(
+        Count = count_gene$Freq, bar2 = anno_barplot(count_gene$Freq),
+        annotation_name_gp = gpar(fontsize = 9)
+    )
+
+    col_fun <- colorRamp2(
+        c(0, max(log2(toPlot + 0.00001), na.rm = TRUE)),
+        c("white", "#38686A")
+    )
+
+    ht <- Heatmap(
+        log2(toPlot + 0.00001),
+        name = "Median CN",
+        col = col_fun,
+        rect_gp = gpar(col = "gray", lwd = 0.5),
+        show_column_names = FALSE,
+        row_names_gp = gpar(fontsize = 6),
+        top_annotation = ha1,
+        right_annotation = row_ha
+    )
+
+    filename <- paste0(RESULTS_DIR, "figures/AA_exploration/gene_analysis/ecDNA_oncogenes_samples.png")
+    png(filename, width = 15, height = 8, res = 600, units = "in")
+    ht
+    dev.off()
+}
+
 #' Plot top genes across amplicon classes and CN
 #' displays if gene is oncogene
 #' 

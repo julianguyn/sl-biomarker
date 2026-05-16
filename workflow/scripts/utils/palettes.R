@@ -38,15 +38,14 @@ variant_pal <- c(
     "INS & DEL" = "#AA968A"
 )
 
-cohort_pal <- c(
-    "BTC" = "#889379",
-    "COMPASS" = "#D1CDBA",
-    "GOTIT" = "#7B684A",
-    "INSPIRE" = "#D6BE94",
-    "IOALINES" = "#57644E",
-    "IRIS" = "#878C7D",
-    "MOHCCNO" = "#E8E1D9",
-    "OCTANE" = "#454A2C"
+ecDNA_context_pal <- c(
+    "BFB-like" = "#CC9979",
+    "Heavily rearranged multichromosomal" = "#57644E",
+    "Heavily rearranged unichromosomal" = "#889379",
+    "Simple circular complex background" = "#7B684A",
+    "Simple circular simple background" = "#D6BE94",
+    "Two-foldback" = "#E8E1D9",
+    "Unknown" = "#454A2C"
 )
 
 SL_pal <- c(
