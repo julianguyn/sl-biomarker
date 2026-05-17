@@ -76,6 +76,8 @@ for (oncogene in oncogenes) {
     oncogene_df <- rbind(oncogene_df, samples)
 }
 
+saveRDS(oncogene_df, file = paste0(PROCDATA_DIR, "AA_exploration/oncogene_df.rds"))
+
 ###########################################################
 # Top amplified oncogenes across all amplicon classes
 ###########################################################
