@@ -187,7 +187,7 @@ for (sample in PM_meta$Sample_ID) {
         PM_meta$RNA[PM_meta$Sample_ID == sample] <- rsem_meta$Omics_ID[rsem_meta$match_WG == sample]
     }
 }
-dim(PM_meta[PM_meta$RNA == "missing",]) #169 cases with missing RNA
+dim(PM_meta[PM_meta$RNA == "missing",]) #169 cases with missing RNA, 1521 not missing
 
 write.csv(PM_meta, file = "metadata/2026-05-29_PM_meta.csv", quote = FALSE, row.names = FALSE)
 
@@ -195,53 +195,33 @@ missing_RNA <- PM_meta[PM_meta$RNA == "missing",]
 write.csv(missing_RNA, file = "metadata/2026-05-29_PM_meta_missing_RNA.csv", quote = FALSE, row.names = FALSE)
 
 ###########################################################
-# Mapping omics to ecDNA
-###########################################################
-
-# first pass mapping
-meta$RNA <- "missing"
-meta$MUT <- "missing"
-meta$Omics_ID <- NA
-for (sample in intersect(meta$Sample_ID, omics$OICR_ID)) {
-    meta$MOHCCN_ID[meta$Sample_ID == sample] <- omics$PM2C_SAMPLE_ID[omics$OICR_ID == sample]
-    meta$RNA[meta$Sample_ID == sample] <- omics$RNA[omics$OICR_ID == sample]
-    meta$MUT[meta$Sample_ID == sample] <- omics$MUT[omics$OICR_ID == sample]
-    meta$Omics_ID[meta$Sample_ID == sample] <- sample
-}
-
-# helper function for manual pass
-map_IDs <- function(meta, id_in_meta, id_in_omics) {
-    meta$MOHCCN_ID[meta$Sample_ID == id_in_meta] <- omics$PM2C_SAMPLE_ID[omics$OICR_ID == id_in_omics]
-    meta$RNA[meta$Sample_ID == id_in_meta] <- omics$RNA[omics$OICR_ID == id_in_omics]
-    meta$MUT[meta$Sample_ID == id_in_meta] <- omics$MUT[omics$OICR_ID == id_in_omics]
-    meta$Omics_ID[meta$Sample_ID == id_in_meta] <- id_in_omics
-    return(meta)
-}
-
-# second pass with manual mapping
-for (sample in names(ID_MAPPING)) {
-    meta <- map_IDs(meta, sample, ID_MAPPING[[sample]])
-}
-
-###########################################################
 # Load in BC Mapping
 ###########################################################
 
-bc_meta <- fread("metadata/MOHCCN-BC_sample_file_map_merged.tsv", data.table = FALSE)
-load("metadata/RNASeq.RData")
+bc_meta <- fread("metadata/MOHCCN-BC_sample_file_map_merged.tsv", data.table = FALSE) #3967
+# note: BC_meta (the ones with ecDNA) only has 1513 samples
+load("metadata/RNASeq.RData") # 910 ids of gene expression files
 
 # get IDs shared between the RNA data and the BC metadata
 bc_meta$have_RNA <- ifelse(bc_meta$library %in% ids, "RNA", "no RNA")
-have_RNA <- bc_meta[bc_meta$have_RNA == "RNA",]
+have_RNA <- bc_meta[bc_meta$have_RNA == "RNA",] #909
 
 # get IDs shared between the ecDNA data and RNA data
-bc_ids <- intersect(have_RNA$donor_study_id, meta$Sample_ID)
+bc_ids <- intersect(have_RNA$donor_study_id, BC_meta$Sample_ID) # 707
 
+BC_meta$RNA <- "missing"
 for (sample in bc_ids) {
     library_id <- have_RNA$library[have_RNA$donor_study_id == sample]
     if (length(library_id) > 1) library_id <- paste0(library_id[1], "_", library_id[2])
-    meta$Omics_ID[meta$Sample_ID == sample] <- library_id
+    BC_meta$RNA[BC_meta$Sample_ID == sample] <- library_id
 }
+dim(BC_meta[BC_meta$RNA == "missing",]) #806 missing, 707 not missing
+
+write.csv(BC_meta, file = "metadata/2026-05-29_BC_meta.csv", quote = FALSE, row.names = FALSE)
+
+missing_RNA <- BC_meta[BC_meta$RNA == "missing",]
+write.csv(missing_RNA, file = "metadata/2026-05-29_BC_meta_missing_RNA.csv", quote = FALSE, row.names = FALSE)
+
 
 ###########################################################
 # Save metadata
