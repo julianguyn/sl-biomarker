@@ -35,6 +35,7 @@ meta <- data.frame(
     Cohort = all_samples$cohort,
     Sample_ID = all_samples$sample,
     MOHCCN_ID = NA,
+    Patient_ID = sub("^([A-Za-z0-9]+_[0-9]+)_.*$", "\\1", all_samples$sample)
     Batch = all_samples$batch,
     Duplicated = all_samples$duplicated,
     Results_Table = all_samples$result_table
@@ -49,6 +50,40 @@ meta$NA_Amp <- ifelse(meta$Sample_ID %in% na_amps, "NA Amplicon Number", "Has Am
 # split duplicates
 removed_duplicates <- meta[meta$Duplicated == "duplicated_removed",]
 meta <- meta[-which(meta$Duplicated == "duplicated_removed"),]
+
+###########################################################
+# Make life easier by splitting PM and BC
+###########################################################
+
+PM_meta <- meta[meta$Centre == "PM2C",]
+BC_meta <- meta[meta$Centre == "BCCA",]
+
+###########################################################
+# Map RNA to PM
+###########################################################
+
+load("metadata/PM2C_RSEM.RData")
+# included here is batch1 and batch2, two vectors of strings
+
+rsem_meta <- data.frame(
+    Batch = c(
+        rep("Batch1", length(batch1)),
+        rep("Batch2", length(batch2))
+    ),
+    Omics_ID = sub("\\.RSEM.*", "", c(batch1, batch2))
+)
+rsem_meta$Patient_ID <- sub("^([A-Za-z0-9]+_[0-9]+)_.*$", "\\1", rsem_meta$Omics_ID)
+
+
+# 1690 unique sample IDs from PM_meta
+# 451 from batch1, 1118 from batch2 = 1569 total
+
+# trying to map the IDs 
+
+table(rsem_meta$Omics_ID %in% PM_meta$Sample_ID)
+
+
+table(sub("_WT_", "_WG_", batch1) %in% PM_meta$Sample_ID)
 
 ###########################################################
 # Mapping omics to ecDNA
