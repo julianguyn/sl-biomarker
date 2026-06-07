@@ -34,6 +34,6 @@ PM_meta <- read.csv("metadata/2026-05-29_PM_meta.csv")
 
 pm_rna <- readRDS("data/procdata/RNA_TPM/rsem.rds")
 pm_rna <- pm_rna[,colnames(pm_rna) %in% PM_meta$RNA] #1521 samples
-colnames(pm_rna) <- 
+colnames(pm_rna) <- PM_meta$Sample_ID[match(colnames(pm_rna), PM_meta$RNA)]
 
-write.csv(pm_res, file = "data/procdata/RNA_TPM/PM_RNA.csv", quote = FALSE, row.names = FALSE)
+saveRDS(pm_rna, file = "data/procdata/RNA_TPM/PM_RNA.rds")
