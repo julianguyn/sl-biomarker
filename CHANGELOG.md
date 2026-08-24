@@ -1,0 +1,56 @@
+# Changelog
+
+## [0.2.0](https://github.com/julianguyn/sl-biomarker/compare/v0.1.0...v0.2.0) (2026-08-24)
+
+
+### Features
+
+* add PSets ([b3b50bc](https://github.com/julianguyn/sl-biomarker/commit/b3b50bc788d53495bb694fee594c9db786f6650d))
+* all gene analysis ([4dc2f4d](https://github.com/julianguyn/sl-biomarker/commit/4dc2f4db9716b1920935050a74481d9493d446f9))
+* analysis of mutations ([7eef072](https://github.com/julianguyn/sl-biomarker/commit/7eef0723d1f8defb50f1bc925f5881289310489e))
+* analysis of SKOs" ([105e015](https://github.com/julianguyn/sl-biomarker/commit/105e0151b88be5532f026ba414c29179ec384df3))
+* catch duplicates ([b77f6c8](https://github.com/julianguyn/sl-biomarker/commit/b77f6c8e1004ac93c31aa56e8bbb581ff6900ce8))
+* catch NA amps ([054de09](https://github.com/julianguyn/sl-biomarker/commit/054de098623b272e0eb3f147e44a0f93fb5a25f4))
+* ccl validation checkpoint ([7203b7f](https://github.com/julianguyn/sl-biomarker/commit/7203b7f51c76fbc665ddadd048219ae2c768d653))
+* ccl validation of SKOs ([48bb377](https://github.com/julianguyn/sl-biomarker/commit/48bb3778042fc67c111ad401a567d8f8bc17faac))
+* cohort analysis ([939a6b9](https://github.com/julianguyn/sl-biomarker/commit/939a6b9cab5f3ab282962213412fbd27877550fe))
+* cohort exploratory analysis ([ba91ee0](https://github.com/julianguyn/sl-biomarker/commit/ba91ee01e897be6affcbecf48db80c27ea24220f))
+* convert SL scores step to Snakefile ([185b558](https://github.com/julianguyn/sl-biomarker/commit/185b558cc4f63ba68642bc9046a20cbce61d3bba))
+* ecDNA context analysis ([8550417](https://github.com/julianguyn/sl-biomarker/commit/8550417f73ef0e5974b907cee6edb916f3fa6563))
+* ecDNA counts and cn ([a192450](https://github.com/julianguyn/sl-biomarker/commit/a192450d655500c41bb6eba41d9299bbd1b9cf69))
+* gene exploration ([d496ac7](https://github.com/julianguyn/sl-biomarker/commit/d496ac78ce0201aacbd37ba1eecb2b66e7a33ddf))
+* heatmap of mutation class ([9c95877](https://github.com/julianguyn/sl-biomarker/commit/9c95877325329d165ca42d876bbb5aa6a0e142a6))
+* map BC RNA ([4632960](https://github.com/julianguyn/sl-biomarker/commit/4632960fb0cb6f5ff24348f85a428c561b2d6bb1))
+* map metadata ([73f4f22](https://github.com/julianguyn/sl-biomarker/commit/73f4f22e6488723dabef28d2995e676fc4f82444))
+* minor figure formating ([1b750e1](https://github.com/julianguyn/sl-biomarker/commit/1b750e1274712c7ddafb4504120efa696c55f4f0))
+* mutation ecDNA collab ([0428c01](https://github.com/julianguyn/sl-biomarker/commit/0428c01cfb4cbf8563d3c69d296d50659e9ce07b))
+* new palettes ([6f9a660](https://github.com/julianguyn/sl-biomarker/commit/6f9a66007fea218ff1a3e279732594c344366ff2))
+* pie chart ([b3fc4aa](https://github.com/julianguyn/sl-biomarker/commit/b3fc4aa7be70f2dfefae9bf996eb4a5d568e30a8))
+* plot prevalence of mutations in SKOs ([2f363d0](https://github.com/julianguyn/sl-biomarker/commit/2f363d0a73c05616259d906fbdb035407a4454b5))
+* prelim AA output exploration ([8d24011](https://github.com/julianguyn/sl-biomarker/commit/8d24011b8b117dcfc5c02904c6d38e59a24d2cd4))
+* prelim data exploration ([9c5a77e](https://github.com/julianguyn/sl-biomarker/commit/9c5a77e993572921703617d80ee86cd3212e373f))
+* preprocessing exploration ([175bbf1](https://github.com/julianguyn/sl-biomarker/commit/175bbf1ecb0597ab183d3a37b3f7db9986d28e54))
+* process PM RNA ([bde21b2](https://github.com/julianguyn/sl-biomarker/commit/bde21b2088d065aa9b5fd0a78572822a28bed466))
+* process PM RNA files ([ff6242b](https://github.com/julianguyn/sl-biomarker/commit/ff6242b65a321085a371dfca38eddcc0672ded54))
+* save BC_meta cases ([642ef25](https://github.com/julianguyn/sl-biomarker/commit/642ef25a81cacd7027224b69b5d752bbfe5da89a))
+* save oncogene_df procdata ([a3bb026](https://github.com/julianguyn/sl-biomarker/commit/a3bb02615f1e9aa1ffbaf8f391aad3999f9b3cab))
+* save rds ([3f9264b](https://github.com/julianguyn/sl-biomarker/commit/3f9264ba4bab9364d5e858be3a91c9cadadc11da))
+* save SKOs counts ([21c9712](https://github.com/julianguyn/sl-biomarker/commit/21c97123a2ef06049956dca0d2c2e3192a62134d))
+* SKOs across cohorts ([b6e877c](https://github.com/julianguyn/sl-biomarker/commit/b6e877cf20762b90773c0121b8f4e37e42006513))
+* SL scores from MOHCCN cohorts ([143b3a5](https://github.com/julianguyn/sl-biomarker/commit/143b3a525380fdd3a64c5fa3c70eefdd36686160))
+* split pipeline ([b511348](https://github.com/julianguyn/sl-biomarker/commit/b5113481cb12f80ee315dadb823714de19615a55))
+* Top amplified (onco)genes in ecDNA vs other classes ([3ce5a1b](https://github.com/julianguyn/sl-biomarker/commit/3ce5a1bc7a25a674584857ed16797a2493009807))
+* top oncogenes across amplicons ([773c59b](https://github.com/julianguyn/sl-biomarker/commit/773c59b57c6345529541a2c9838093e78c65df3a))
+* top oncogenes per amplicon class ([5c41b76](https://github.com/julianguyn/sl-biomarker/commit/5c41b7638fcdffc47d3365e4dafec22ebaa06ea3))
+* update for batches 2-4 ([7a8cc10](https://github.com/julianguyn/sl-biomarker/commit/7a8cc10ae52338d0c15968aa2255d92ff0918853))
+* validate SKOs in ccls ([021f57c](https://github.com/julianguyn/sl-biomarker/commit/021f57cd46167d1d916e18c7d8d4702ad2d38dc4))
+
+
+### Bug Fixes
+
+* arg names ([73c1929](https://github.com/julianguyn/sl-biomarker/commit/73c1929d65ff69970d776ef47b490de8c43b1ec6))
+* cluster resources ([a2b4d6e](https://github.com/julianguyn/sl-biomarker/commit/a2b4d6e87fd415946fc8948678e3a2dec156b656))
+* cohort IDs ([ec94ac4](https://github.com/julianguyn/sl-biomarker/commit/ec94ac4d499c4680a831983d864cc056ed2d42c3))
+* filenames ([2331726](https://github.com/julianguyn/sl-biomarker/commit/23317264caf5b23b8948e060ba7245b5c7f32a1e))
+* manually extract filepaths ([b647f37](https://github.com/julianguyn/sl-biomarker/commit/b647f37b3ebab0bb89fa0743b27cd24c3efa2e5b))
+* non-parametric thirds ([5153948](https://github.com/julianguyn/sl-biomarker/commit/51539485f1d2c0932566aee9a4454b08a370828a))
