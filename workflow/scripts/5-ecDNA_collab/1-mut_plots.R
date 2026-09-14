@@ -70,10 +70,19 @@ ecDNA <- AA_results[
 ###########################################################
 
 ecDNA_mut <- data.frame(sample = all_samples$sample)
-ecDNA_mut$ecDNA <- ifelse(ecDNA_mut$sample %in% ecDNA$'Sample name', "ecDNA+", "ecDNA-")
+ecDNA_mut$ecDNA <- ifelse(ecDNA_mut$sample %in% ecDNA$'Sample name', "ecDNA+ (with oncogene)", "ecDNA-")
 ecDNA_mut$match_id <- sub("_WG", "", ecDNA_mut$sample)
 
 # 1213 samples in toPlot
+
+###########################################################
+# Get MYC ecDNA
+###########################################################
+
+myc_ecDNA <- ecDNA[grep("MYC", ecDNA$Oncogenes),]
+myc_ecDNA <- myc_ecDNA[-grep("MYCN", myc_ecDNA$Oncogenes),]
+no_oncogene <- ecDNA[ecDNA$Oncogenes == "[]",]
+no_oncogene <- no_oncogene[-which(no_oncogene$'Sample name' %in% myc_ecDNA$'Sample name'),]
 
 ###########################################################
 # Plot TP53 - ecDNA status proportion plot
@@ -86,19 +95,24 @@ toPlot$TP53 <- ifelse(toPlot$TP53 > 0, "Mut", "Wt")
 
 # 968 samples
 
+# add MYC ecDNA and no-oncogene label
+toPlot$ecDNA <- ifelse(toPlot$sample %in% myc_ecDNA$'Sample name', "MYC ecDNA+", toPlot$ecDNA)
+toPlot$ecDNA <- ifelse(toPlot$sample %in% no_oncogene$'Sample name', "ecDNA+ (no oncogene)", toPlot$ecDNA)
+toPlot$ecDNA <- sub(" \\(", "\n(", toPlot$ecDNA)
+
 # get counts
 totals <- toPlot %>%
   count(ecDNA, name = "total")
 
 # get proportions
-toPlot <- toPlot %>%
+toPlot_prop <- toPlot %>%
     count(ecDNA, TP53) %>%
     group_by(ecDNA) %>%
     mutate(prop = n / sum(n))
-toPlot$TP53 <- factor(toPlot$TP53, levels = c("Wt", "Mut"))
+toPlot_prop$TP53 <- factor(toPlot_prop$TP53, levels = c("Wt", "Mut"))
 
 # plot
-p <- ggplot(toPlot, aes(x = ecDNA, y = prop, fill = TP53)) +
+p <- ggplot(toPlot_prop, aes(x = ecDNA, y = prop, fill = TP53)) +
     geom_col(position = "fill", width = 0.6, color = "black") +
     geom_text(
         data = totals,
@@ -111,7 +125,29 @@ p <- ggplot(toPlot, aes(x = ecDNA, y = prop, fill = TP53)) +
     labs(x = "", y = "% Tumor Samples", fill = "TP53") +
     theme_classic()
 filename <- "data/results/figures/ecDNA_collab/proportion_plots.png"
-ggsave(filename, p, w=4, h=3)
+ggsave(filename, p, w=6, h=3)
+
+###########################################################
+# Check top oncogenes
+###########################################################
+
+get_top_oncogenes <- function(samples) {
+    oncogenes <- ecDNA$Oncogenes[ecDNA$'Sample name' %in% samples]
+    oncogenes <- unlist(strsplit(gsub("\\[|\\]|'", "", oncogenes), ",\\s*"))
+    tt <- as.data.frame(table(oncogenes))
+    tt <- tt[order(tt$Freq, decreasing = TRUE),]
+    return(tt)
+}
+
+myc_ec <- toPlot$sample[toPlot$ecDNA == "MYC ecDNA+"]
+onc_ec <- toPlot$sample[toPlot$ecDNA == "ecDNA+\n(with oncogene)"]
+
+
+myc_ec <- get_top_oncogenes(myc_ec)
+myc_ec
+onc_ec <- get_top_oncogenes(onc_ec)
+head(onc_ec, 20)
+onc_ec[onc_ec$oncogenes == "PVT1",]
 
 ###########################################################
 # Plot common OR volcano plot
