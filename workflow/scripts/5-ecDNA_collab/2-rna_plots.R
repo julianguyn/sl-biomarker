@@ -142,3 +142,21 @@ corr_res <- rbind(corr_res, get_corr(wt_non_myc, "TP53 WT (non-MYC ecDNA)"))
 df <- corr_res[,c("label", "cor", "pval", "n")]
 rownames(df) <- NULL
 write.csv(df, file = "data/results/data/ecDNA_collab/pvt1_tp53_corr.csv", quote = FALSE, row.names = FALSE)
+
+
+###########################################################
+# Plot correlations
+###########################################################
+
+toPlot <- df[-1,]
+toPlot$Cohort <- rep(c("PCAWG", "CCLE", "MOHCCN"))
+toPlot$Mut <- rep(c("TP53 Mut", "TP53 WT"), 3)
+
+ggplot(toPlot, aes(x = Mut, y = Cohort, fill = cor)) +
+    geom_tile() +
+    #geom_point(shape = 21) +
+    geom_text(aes(label = round(cor, 2))) +
+    #scale_size(range = c(6, 20)) +
+    theme_minimal() +
+    scale_fill_gradient2(low = "#39066B", mid= "#EBEBEB", high = "#008A8C", limits = c(-1, 1)) +
+    labs(x = "TP53 Mutation Status", fill = "Spearman\nCorrelation")
