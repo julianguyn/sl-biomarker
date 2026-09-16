@@ -95,6 +95,7 @@ toPlot$TP53 <- ifelse(toPlot$TP53 > 0, "Mut", "Wt")
 
 # 968 samples
 
+# ---- Plot 1
 # add MYC ecDNA and no-oncogene label
 toPlot$ecDNA <- ifelse(toPlot$sample %in% myc_ecDNA$'Sample name', "MYC ecDNA+", toPlot$ecDNA)
 toPlot$ecDNA <- ifelse(toPlot$sample %in% no_oncogene$'Sample name', "ecDNA+ (no oncogene)", toPlot$ecDNA)
@@ -126,6 +127,48 @@ p <- ggplot(toPlot_prop, aes(x = ecDNA, y = prop, fill = TP53)) +
     theme_classic()
 filename <- "data/results/figures/ecDNA_collab/proportion_plots.png"
 ggsave(filename, p, w=6, h=3)
+
+pdf("data/results/figures/ecDNA_collab/proportion_plots_1.pdf", w=6, h=3)
+p
+dev.off()
+
+
+# ---- Plot 2
+
+# keep samples with TP53 mutation data
+toPlot <- ecDNA_mut[ecDNA_mut$match_id %in% rownames(PM_mut),]
+toPlot$TP53 <- PM_mut$TP53[match(toPlot$match_id, rownames(PM_mut))]
+toPlot$TP53 <- ifelse(toPlot$TP53 > 0, "Mut", "Wt")
+
+# get counts
+totals <- toPlot %>%
+  count(ecDNA, name = "total")
+
+# get proportions
+toPlot <- toPlot %>%
+    count(ecDNA, TP53) %>%
+    group_by(ecDNA) %>%
+    mutate(prop = n / sum(n))
+toPlot$TP53 <- factor(toPlot$TP53, levels = c("Wt", "Mut"))
+
+# plot
+p <- ggplot(toPlot, aes(x = ecDNA, y = prop, fill = TP53)) +
+    geom_col(position = "fill", width = 0.6, color = "black") +
+    geom_text(
+        data = totals,
+        aes(x = ecDNA, y = 1.05, label = paste0("n = ", total)),
+        inherit.aes = FALSE,
+        size = 4
+    ) +
+    scale_y_continuous(labels = scales::percent_format()) +
+    scale_x_discrete(labels = c("ecDNA-", "ecDNA+")) +
+    scale_fill_manual("TP53 status", values = c("Mut" = "#469D77", "Wt" = "gray")) +
+    labs(x = "", y = "% Tumor Samples", fill = "TP53") +
+    theme_classic()
+
+pdf("data/results/figures/ecDNA_collab/proportion_plots_2.pdf", w=4, h=3)
+p
+dev.off()
 
 ###########################################################
 # Check top oncogenes
@@ -223,3 +266,7 @@ p <- ggplot(toPlot, aes(x = log2OR, y = -log10(padj), color = sig)) +
 filename <- "data/results/figures/ecDNA_collab/volcano_plot.png"
 ggsave(filename, p, w=5, h=3)
 
+
+pdf("data/results/figures/ecDNA_collab/volcano_plot.pdf", w=5, h=3)
+p
+dev.off()
