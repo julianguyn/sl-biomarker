@@ -43,12 +43,17 @@ primary <- primary[,c("program_id", "submitter_donor_id", "primary_site")]
 search <- all_samples[,c("cohort", "sample", "Centre")]
 search$cohort <- as.character(search$cohort)
 
-table(unique(search$cohort) %in% unique(primary$program_id))
-
 search$primary <- ifelse(search$sample %in% primary$submitter_donor_id, search$sample, "missing")
 
 have <- search[search$primary != "missing",]
 missing <- search[search$primary == "missing",]
 table(primary$submitter_donor_id %in% search$sample)
 
-write.csv(search, file = "data/procdata/clinical/missing_primary.csv", quote = FALSE, row.names = FALSE)
+write.csv(search, file = "data/procdata/clinical/coded_missing_primary.csv", quote = FALSE, row.names = FALSE)
+write.csv(missing, file = "data/procdata/clinical/missing_primary.csv", quote = FALSE, row.names = FALSE)
+
+
+search_AA <- AA_results[,c("Sample name", "Centre"),]
+search_AA$primary <- ifelse(search_AA$'Sample name' %in% primary$submitter_donor_id, search$sample, "missing")
+have <- search_AA[search_AA$primary != "missing",]
+missing <- search_AA[search_AA$primary == "missing",]
