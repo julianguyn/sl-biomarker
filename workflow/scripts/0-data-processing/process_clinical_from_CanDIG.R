@@ -1,3 +1,5 @@
+# no longer used - use clinical data from Matthew
+
 # load libraries
 suppressPackageStartupMessages({
     library(data.table)
@@ -61,6 +63,11 @@ search$cohort <- as.character(search$cohort)
 
 search$primary <- ifelse(search$sample %in% primary$sample, primary$primary_site, "missing")
 
+# send all PM
+pm <- search[search$Centre == "PM2C",]
+pm$PM2C_match_ID <- map$PM2C_SAMPLE_ID[match(pm$sample, map$OICR_SAMPLE_FILE)]
+write.csv(pm, file = "data/procdata/clinical/all_pm.csv", quote = FALSE, row.names = FALSE)
+
 ###########################################################
 # Get missing data
 ###########################################################
@@ -94,5 +101,10 @@ PM_missing <- PM_missing[-which(PM_missing$patientID %in% PM_found$patientID),]
 # Save
 ###########################################################
 
-#write.csv(search, file = "data/procdata/clinical/coded_missing_primary.csv", quote = FALSE, row.names = FALSE)
-#write.csv(missing, file = "data/procdata/clinical/missing_primary.csv", quote = FALSE, row.names = FALSE)
+PM_missing$PM2C_sample_ID <- map$PM2C_SAMPLE_ID[match(PM_missing$sample, map$OICR_SAMPLE_FILE)]
+
+BC_missing$patientID <- sub("^((?:[^_]+_){1}[^_]+).*", "\\1", BC_missing$sample)
+BC_missing$PM2C_sample_ID <- NA
+missing <- rbind(PM_missing, BC_missing)
+
+write.csv(missing, file = "data/procdata/clinical/missing_primary.csv", quote = FALSE, row.names = FALSE)

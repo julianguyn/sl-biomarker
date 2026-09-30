@@ -224,10 +224,45 @@ write.csv(missing_RNA, file = "metadata/2026-05-29_BC_meta_missing_RNA.csv", quo
 
 
 ###########################################################
+# Compile clinical data
+###########################################################
+
+# load PM oncotree
+mohda <- read.csv("metadata/mohda2026003_oncotree.csv")
+
+# match PM sampleIDs
+unmatched <- PM_meta$Sample_ID[-which(PM_meta$Sample_ID %in% mohda$samples)]
+
+# match oncotree (setting default for unmatched sample)
+PM_meta$cancer_type_code_oncotree <- "CHOL"
+PM_meta$oncotree_root <- "BILIARY_TRACT"
+
+PM_meta$cancer_type_code_oncotree <- mohda$cancer_type_code_oncotree[match(PM_meta$Sample_ID, mohda$samples)]
+PM_meta$oncotree_root <- mohda$oncotree_root[match(PM_meta$Sample_ID, mohda$samples)]
+
+###########################################################
+# Compile WGS data
+###########################################################
+
+load("metadata/data_avail.RData") # two objectS: mafs and fusion
+
+mafs <- data.frame(Sample = gsub("\\..*", "", mafs), Maf = mafs)
+unmatched <- PM_meta$Sample_ID[-which(PM_meta$Sample_ID %in% mafs$Sample)]
+PM_meta$maf <- mafs$Maf[match(PM_meta$Sample_ID, mafs$Sample)]
+
+
+###########################################################
 # Save metadata
 ###########################################################
 
-write.table(meta, file = "metadata/2026-05-28_meta_ecDNA.tsv", quote = FALSE, row.names = FALSE)
+write.csv(PM_meta, file = "metadata/2026-09-30_PM_meta.csv", quote = F, row.names = F)
+write.csv(BC_meta, file = "metadata/2026-09-30_BC_meta.csv", quote = F, row.names = F)
 
-bc_no_ecDNA <- have_RNA[-which(have_RNA$donor_study_id %in% meta$Sample_ID),]
-save(bc_no_ecDNA, removed_duplicates, file = "metadata/sample_ids_removed.RData")
+###########################################################
+# Save metadata
+###########################################################
+
+#write.table(meta, file = "metadata/2026-05-28_meta_ecDNA.tsv", quote = FALSE, row.names = FALSE)
+
+#bc_no_ecDNA <- have_RNA[-which(have_RNA$donor_study_id %in% meta$Sample_ID),]
+#save(bc_no_ecDNA, removed_duplicates, file = "metadata/sample_ids_removed.RData")
