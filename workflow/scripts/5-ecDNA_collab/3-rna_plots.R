@@ -8,6 +8,7 @@ suppressPackageStartupMessages({
     library(purrr)
     library(broom)
     library(ggrepel)
+    library(patchwork)
 })
 
 PROCDATA_DIR <- "data/procdata/"
@@ -160,3 +161,26 @@ ggplot(toPlot, aes(x = Mut, y = Cohort, fill = cor)) +
     theme_minimal() +
     scale_fill_gradient2(low = "#39066B", mid= "#EBEBEB", high = "#008A8C", limits = c(-1, 1)) +
     labs(x = "TP53 Mutation Status", fill = "Spearman\nCorrelation")
+
+###########################################################
+# Plot scatter plot
+###########################################################
+
+plot_scatter <- function(toPlot, title) {
+    p <- ggplot(toPlot, aes(x = TP53, y = PVT1)) +
+    geom_point() +
+    geom_smooth(method = "lm", color = "#1A936F") +
+    theme_classic() +
+    labs(x = "TP53 expression", y = "PVT1 expression", title = title)
+    return(p)
+}
+
+p1 <- plot_scatter(PM_rna, "All Samples")
+p2 <- plot_scatter(PM_rna[PM_rna$TP53_status == "Mut",], "TP53 Mut")
+p3 <- plot_scatter(PM_rna[PM_rna$TP53_status == "Wt",], "TP53 Wt")
+
+p <- p1 + p2 + p3
+
+pdf("data/results/figures/ecDNA_collab/scatter_plots.pdf", w=8, h=3)
+p
+dev.off()
