@@ -42,6 +42,12 @@ all_samples <- readRDS(paste0(PROCDATA_DIR, "AA_output/sample_df.rds"))
 AA_results <- process_cohort_names(AA_results, res = TRUE)
 all_samples <- process_cohort_names(all_samples)
 
+# load PM oncotree
+mohda <- read.csv("metadata/mohda2026003_oncotree.csv")
+mohda$matchID <- sub("WG_", "", mohda$samples)
+
+rownames(PM_mut)[-which(rownames(PM_mut) %in% mohda$matchID)]
+
 ###########################################################
 # Preprocessing
 ###########################################################
@@ -202,28 +208,60 @@ PM_mut$ecDNA <- ecDNA_mut$ecDNA[match(rownames(PM_mut), ecDNA_mut$match_id)]
 PM_mut <- PM_mut %>%
   mutate(across(-ecDNA, ~ if_else(. > 0, "Mut", "Wt")))
 
+# remove duplicate
+PM_mut <- PM_mut[-which(rownames(PM_mut) == "TGL49_0431_Ov_P"),]
+rownames(PM_mut) <- sub("^(([^_]+_){3}[^_]+)_.*$", "\\1", rownames(PM_mut))
 
-test_genes <- genes[1:2000]
-# loop Fisher's test
-res <- map_dfr(test_genes, function(gene) {
+# match sample IDs
+mohda$matchID <- sub("^(([^_]+_){3}[^_]+)_.*$", "\\1", mohda$samples)
+PM_mut <- PM_mut[rownames(PM_mut) %in% mohda$matchID,]
+
+# add cancer type
+PM_mut$cancer_type <- mohda$oncotree_root[match(rownames(PM_mut), mohda$matchID)]
+
+save(PM_mut, genes, file = "OR_calculations.RData")
+
+# loop Fisher's and CMH tests
+ecDNA_levels <- sort(unique(na.omit(PM_mut$ecDNA)))
+res <- map_dfr(genes, function(gene) {
   df <- PM_mut %>%
-    dplyr::filter(!is.na(.data[[gene]]), .data[[gene]] %in% c("Mut", "Wt")) %>%
-    dplyr::mutate(status = factor(.data[[gene]], levels = c("Mut", "Wt")))
-  
+    dplyr::filter(!is.na(.data[[gene]]), .data[[gene]] %in% c("Mut", "Wt"),
+                  !is.na(ecDNA)) %>%
+    dplyr::mutate(status = factor(.data[[gene]], levels = c("Mut", "Wt")),
+                  ecDNA  = factor(ecDNA, levels = ecDNA_levels))
+
+  na_row <- tibble(gene = gene,
+                   OR = NA_real_, p.value = NA_real_, ci_low = NA_real_, ci_high = NA_real_,
+                   cmh_OR = NA_real_, cmh_p.value = NA_real_,
+                   cmh_ci_low = NA_real_, cmh_ci_high = NA_real_, n_strata = 0L)
+
   tab <- table(df$ecDNA, df$status)
-  
-  # skip genes that don't form 2x2 after filtering
-  if (!all(dim(tab) == c(2, 2))) {
-    return(tibble(gene = gene, OR = NA, p.value = NA, ci_low = NA, ci_high = NA))
-  }
+
+  # skip genes with an empty row or column (e.g. no mutants, or only one ecDNA group)
+  if (any(rowSums(tab) == 0) || any(colSums(tab) == 0)) return(na_row)
+
   ft <- fisher.test(tab)
-  tibble(
-    gene = gene,
-    OR = ft$estimate,
-    p.value = ft$p.value,
-    ci_low = ft$conf.int[1],
-    ci_high = ft$conf.int[2]
-  )
+  out <- na_row %>%
+    dplyr::mutate(OR = unname(ft$estimate), p.value = ft$p.value,
+                  ci_low = ft$conf.int[1], ci_high = ft$conf.int[2])
+
+  # CMH: only strata containing both ecDNA groups and both mutation statuses are informative
+  df_s <- df %>%
+    dplyr::filter(!is.na(.data[["cancer_type"]])) %>%
+    dplyr::group_by(.data[["cancer_type"]]) %>%
+    dplyr::filter(dplyr::n_distinct(ecDNA) == 2, dplyr::n_distinct(status) == 2) %>%
+    dplyr::ungroup()
+
+  if (nrow(df_s) == 0) return(out)
+
+  tab3 <- table(df_s$ecDNA, df_s$status, droplevels(factor(df_s[["cancer_type"]])))
+  cmh  <- tryCatch(mantelhaen.test(tab3, exact = TRUE), error = function(e) NULL)
+  if (is.null(cmh)) return(out)
+
+  out %>%
+    dplyr::mutate(cmh_OR = unname(cmh$estimate), cmh_p.value = cmh$p.value,
+                  cmh_ci_low = cmh$conf.int[1], cmh_ci_high = cmh$conf.int[2],
+                  n_strata = dim(tab3)[3])
 })
 
 #res <- readRDS("data/procdata/mutations/OR.RDS")
