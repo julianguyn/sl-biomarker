@@ -264,7 +264,12 @@ res <- map_dfr(genes, function(gene) {
                   n_strata = dim(tab3)[3])
 })
 
-#res <- readRDS("data/procdata/mutations/OR.RDS")
+# compile new results
+res <- data.frame(matrix(nrow=0, ncol=10))
+for (i in 1:10) {
+  df <- readRDS(paste0("data/procdata/mutations/indiv/OR_res", i, ".RDS"))
+  res <- rbind(res, df)
+}
 
 toPlot <- res %>%
     mutate(
@@ -305,6 +310,6 @@ filename <- "data/results/figures/ecDNA_collab/volcano_plot.png"
 ggsave(filename, p, w=5, h=3)
 
 
-pdf("data/results/figures/ecDNA_collab/volcano_plot.pdf", w=5, h=3)
+pdf("data/results/figures/ecDNA_collab/volcano_plot_cancer_type_corrected.pdf", w=5, h=3)
 p
 dev.off()
