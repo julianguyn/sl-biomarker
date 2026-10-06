@@ -199,7 +199,7 @@ head(onc_ec, 20)
 onc_ec[onc_ec$oncogenes == "PVT1",]
 
 ###########################################################
-# Plot common OR volcano plot
+# Get common OR and CMH test OR
 ###########################################################
 
 # add ecDNA to PM_mut
@@ -271,6 +271,10 @@ for (i in 1:10) {
   res <- rbind(res, df)
 }
 
+###########################################################
+# Plot common OR volcano plot
+###########################################################
+
 toPlot <- res %>%
     mutate(
     log2OR = -log2(OR),
@@ -287,6 +291,53 @@ toPlot <- toPlot %>%
     OR = case_when(
       is.infinite(OR) ~ NA_real_,
       TRUE ~ OR
+    ),
+    log2OR = ifelse(is.infinite(log2OR), NA_real_, log2OR)
+  )
+
+# plot volcano plot
+quick_pal <- c("Depleted" = "#8ABEE1", "Enriched" = "#469D77", NS = "gray")
+p <- ggplot(toPlot, aes(x = log2OR, y = -log10(padj), color = sig)) +
+    geom_point(alpha = 0.6) +
+    geom_text_repel(
+        data = toPlot[toPlot$gene == "TP53",],
+        aes(label = gene),
+        size = 3.5,
+        show.legend = FALSE
+    ) +
+    scale_color_manual("", values = quick_pal, labels = c("ecDNA depleted", "ecDNA enriched", "Not significant")) +
+    geom_hline(yintercept = -log10(0.05), linetype = "dashed") +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    theme_classic() +
+    labs(x = "log2(Common Odds Ratio)", y = "-log10(FDR)")
+filename <- "data/results/figures/ecDNA_collab/volcano_plot.png"
+ggsave(filename, p, w=5, h=3)
+
+
+pdf("data/results/figures/ecDNA_collab/volcano_plot.pdf", w=5, h=3)
+p
+dev.off()
+
+###########################################################
+# Plot CMH OR volcano plot
+###########################################################
+
+toPlot <- res %>%
+    mutate(
+    log2OR = -log2(cmh_OR),
+    padj = p.adjust(p.value, method = "BH"),
+    sig = case_when(
+      padj < 0.05 & log2OR > 0 ~ "Enriched",
+      padj < 0.05 & log2OR < 0 ~ "Depleted",
+      TRUE ~ "NS"
+    ))
+
+# drop the inf ORs
+toPlot <- toPlot %>%
+  mutate(
+    cmh_OR = case_when(
+      is.infinite(cmh_OR) ~ NA_real_,
+      TRUE ~ cmh_OR
     ),
     log2OR = ifelse(is.infinite(log2OR), NA_real_, log2OR)
   )
