@@ -46,7 +46,7 @@ all_samples <- process_cohort_names(all_samples)
 mohda <- read.csv("metadata/mohda2026003_oncotree.csv")
 mohda$matchID <- sub("WG_", "", mohda$samples)
 
-rownames(PM_mut)[-which(rownames(PM_mut) %in% mohda$matchID)]
+#rownames(PM_mut)[-which(rownames(PM_mut) %in% mohda$matchID)]
 
 ###########################################################
 # Preprocessing
@@ -80,6 +80,22 @@ ecDNA_mut$ecDNA <- ifelse(ecDNA_mut$sample %in% ecDNA$'Sample name', "ecDNA+ (wi
 ecDNA_mut$match_id <- sub("_WG", "", ecDNA_mut$sample)
 
 # 1213 samples in toPlot
+
+###########################################################
+# Driver gene on ecDNA on samples with TP53 mutation
+###########################################################
+
+# keep samples with TP53 mutation data
+toPlot <- ecDNA_mut[ecDNA_mut$match_id %in% rownames(PM_mut),]
+toPlot$TP53 <- PM_mut$TP53[match(toPlot$match_id, rownames(PM_mut))]
+toPlot <- toPlot[toPlot$TP53 > 0,]
+toPlot <- toPlot[toPlot$ecDNA == "ecDNA+ (with oncogene)",]
+toPlot$oncogene <- ecDNA$Oncogenes[match(toPlot$sample, ecDNA$'Sample name')]
+toPlot <- toPlot[toPlot$oncogene != "[]",]
+oncogenes <- unlist(strsplit(gsub("\\[|\\]|'", "", toPlot$oncogene), ",\\s*"))
+
+tt <- table(oncogenes) |> as.data.frame()
+tt <- tt[order(tt$Freq, decreasing = TRUE),]
 
 ###########################################################
 # Get MYC ecDNA
