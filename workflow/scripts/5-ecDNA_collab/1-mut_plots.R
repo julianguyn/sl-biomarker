@@ -85,17 +85,52 @@ ecDNA_mut$match_id <- sub("_WG", "", ecDNA_mut$sample)
 # Driver gene on ecDNA on samples with TP53 mutation
 ###########################################################
 
-# keep samples with TP53 mutation data
-toPlot <- ecDNA_mut[ecDNA_mut$match_id %in% rownames(PM_mut),]
-toPlot$TP53 <- PM_mut$TP53[match(toPlot$match_id, rownames(PM_mut))]
-toPlot <- toPlot[toPlot$TP53 > 0,]
-toPlot <- toPlot[toPlot$ecDNA == "ecDNA+ (with oncogene)",]
-toPlot$oncogene <- ecDNA$Oncogenes[match(toPlot$sample, ecDNA$'Sample name')]
-toPlot <- toPlot[toPlot$oncogene != "[]",]
-oncogenes <- unlist(strsplit(gsub("\\[|\\]|'", "", toPlot$oncogene), ",\\s*"))
+# load in driver genes
+drivers <- read.csv("data/rawdata/metadata/COSMIC_tier1_cancer_drivers.csv")
 
-tt <- table(oncogenes) |> as.data.frame()
-tt <- tt[order(tt$Freq, decreasing = TRUE),]
+# keep PM samples with ecDNA
+toPlot <- AA_results[AA_results$Centre == "PM2C" & AA_results$Classification == "ecDNA",]
+
+# keep genes amplified in at least 10 samples and check TP53 mutation status
+mut_status <- data.frame(matrix(nrow=0, ncol=3))
+colnames(mut_status) <- c("Gene", "TP53.mut", "TP53.wt")
+for (gene in drivers$Gene.Symbol) {
+  if (length(grep(gene, toPlot$'All genes')) >= 10) {
+    keep_samples <- sub("_WG", "", toPlot$'Sample name'[grep(gene, toPlot$'All genes')])
+    if (!all(keep_samples %in% rownames(PM_mut))) {
+      stop(gene, ": samples missing from PM_mut: ",
+           paste(keep_samples[!keep_samples %in% rownames(PM_mut)], collapse = ", "))
+    }
+    tp53 <- PM_mut$TP53[match(keep_samples, rownames(PM_mut))]
+    mut_status <- rbind(mut_status, data.frame(Gene = gene, TP53.mut = length(tp53[tp53!=0]), TP53.wt = length(tp53[tp53==0])))
+  }
+}
+mut_status$n <- mut_status$TP53.mut + mut_status$TP53.wt
+mut_status$percentage <- mut_status$TP53.mut / (mut_status$n) * 100
+
+# plot
+mut_status <- mut_status[order(mut_status$percentage),]
+mut_status$Gene <- factor(mut_status$Gene, levels = mut_status$Gene)
+mut_status$myc <- ifelse(mut_status$Gene == "MYC", "MYC", "Other")
+
+p <- ggplot(mut_status, aes(x = percentage, y = Gene, fill = myc)) +
+  geom_col(width = 0.7, color = "black") +
+  geom_text(aes(label = sprintf("%.2f%% (n=%d)", percentage, n)), hjust = -0.1, size = 3) +
+  scale_x_continuous(limits = c(0, 100), breaks = seq(0, 100, 20),
+                     labels = paste0(seq(0, 100, 20), "%"), expand = expansion(add = c(5, 15))) +
+  coord_cartesian(clip = "off") +
+  scale_fill_manual(values = c("#469D77", "#999999ff")) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    plot.margin = margin(5.5, 60, 5.5, 5.5)
+  ) +
+  labs(y = "Driver Gene on ecDNA", x = expression("Samples with " * italic("TP53") * " mutation"))
+
+pdf("data/results/figures/ecDNA_collab/driver_genes.pdf", w=6, h=6)
+p
+dev.off()
+
 
 ###########################################################
 # Get MYC ecDNA
