@@ -208,6 +208,11 @@ toPlot <- toPlot %>%
     mutate(prop = n / sum(n))
 toPlot$TP53 <- factor(toPlot$TP53, levels = c("Wt", "Mut"))
 
+# Fisher's for pval
+cont_table <- xtabs(n ~ ecDNA + TP53, data = toPlot)
+res <- fisher.test(cont_table)
+res$p.value
+
 # plot
 p <- ggplot(toPlot, aes(x = ecDNA, y = prop, fill = TP53)) +
     geom_col(position = "fill", width = 0.6, color = "black") +
