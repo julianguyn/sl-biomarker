@@ -5,6 +5,8 @@ suppressPackageStartupMessages({
     library(dplyr)
 })
 
+setwd("/cluster/projects/bhklab/projects/SL_MOHCCN/workflow/scripts")
+
 ###########################################################
 # Set variables
 ###########################################################
@@ -112,7 +114,7 @@ message("\nCompiling AA results")
 AA_results <- samples$result_table %>%
   map_dfr(fread) %>%
   mutate(
-    cohort = sub("_.*", "", 'Sample name'),
+    cohort = sub("_.*", "", `Sample name`),
     .before = 1
   )
 
